@@ -66,7 +66,51 @@
         background-repeat: none;
     }
 */
+.playertablecard {
+    display: inline-block;
+    position: relative;
+    margin-top: 5px;
+    width: 72px;
+    height: 96px;
+    background-image: url('img/cards.jpg'); /* temp hack to see it */
+}
 
+#playertables {
+    position: relative;
+    width: 710px;
+    height: 340px;
+}
 
+.playertablename {
+    font-weight: bold;
+}
+
+.playertable {
+    position: absolute;
+    text-align: center;
+    width: 180px;
+    height: 180px;
+}
+
+.playertable_NE {
+    right: 0px;
+    top: 0px;
+}
+.playertable_SE {
+    right: 0px;
+    bottom: 60px;
+}
+.playertable_NW {
+    left: 0px;
+    top: 0px;
+}
+.playertable_SW {
+    left: 0px;
+    bottom: 60px;
+}
+.playertable_S {
+    left: 50%;
+    bottom: 0px;
+}
 
 
