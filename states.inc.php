@@ -68,7 +68,7 @@ $machinestates = array(
         "type" => "game",
         "action" => "stNewHand",
         "updateGameProgression" => true,
-        "transitions" => array( "" => 10 )
+        "transitions" => array( "" => 20 ) // TODO: change back to 10
     ),
 
     // Bid Round

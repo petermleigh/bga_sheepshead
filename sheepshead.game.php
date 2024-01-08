@@ -107,18 +107,15 @@ class Sheepshead extends Table
         // Set the starting player
         self::setGameStateInitialValue( 'bids', 0);
 
-        // initialize 6 cards to each player
-        foreach ( $players as $player_id => $player ) {
-            $cards = $this->cards->pickCards(6, 'deck', $player_id);
-        }
-
-        // TODO: Initialize blind
-        // $blindCards = $this->cards->pickCards(2, 'deck', 0)
-
-        // Init game statistics
+        // TODO: Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
-        //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-        //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
+        // self::initStat( 'table', 'table_handsPlayed', 0 );     
+        // self::initStat( 'player', 'player_pointsEarned', 0 );
+        // self::initStat( 'player', 'player_tricksTaken', 0 ); 
+        // self::initStat( 'player', 'player_handsWon', 0 );    
+        // self::initStat( 'player', 'player_numPick', 0 );     
+        // self::initStat( 'player', 'player_numPartner', 0 );  
+        // self::initStat( 'player', 'player_numStuckPick', 0 );
 
         // TODO: setup the initial game situation here
        
@@ -181,7 +178,50 @@ class Sheepshead extends Table
 //////////// Utility functions
 ////////////    
 
+    function getTrickWinner($cards_on_table) {
+        
+        $best_value = 0;
+        $best_value_player_id = null;
+        $currentTrickSuit = self::getGameStateValue('trickSuit');
+        foreach ( $cards_on_table as $card ) {
+            // Note: type = card suit
+            $card_value = 0;
+            $is_trump = false;
+            if (array_key_exists($card ['type_arg'], $this->cardStrength)) {
+                $card_value = $this->cardStrength [$card ['type_arg']];
+            }
+            
+            if (array_key_exists($card ['id'], $this->trumpStrength)) {
+                $card_value = $this->trumpStrength [$card ['id']];
+                $is_trump = true;
+            }
 
+            if ($card ['type'] == $currentTrickSuit || $is_trump) {
+                if ($best_value_player_id === null || $card_value > $best_value) {
+                    $best_value_player_id = $card ['location_arg']; // Note: location_arg = player who played this card on table
+                    $best_value = $card_value; // Note: type_arg = value of the card
+                }
+            }
+        }
+        return $best_value_player_id;
+    }
+
+    function calcHandPoints($players) {
+        $player_to_points = array ();
+        foreach ( $players as $player_id => $player ) {
+            $player_to_points [$player_id] = 0;
+        }
+
+        $cards = $this->cards->getCardsInLocation("cardswon");
+        foreach ( $cards as $card ) {
+            $player_id = $card ['location_arg'];
+            // Note: 2 = heart
+            if (array_key_exists($card ['type_arg'], $this->points)) {
+                $player_to_points [$player_id] += $this->points [$card ['type_arg']];
+            }
+        }
+        return $player_to_points;
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
@@ -205,7 +245,7 @@ class Sheepshead extends Table
         throw new BgaUserException(self::_("Not implemented: ") . "$player_id goes alone");
     }
 
-    function choosePartner() {
+    function choosePartner($card_id) {
         self::checkAction("choosePartner");
         $player_id = self::getActivePlayerId();
         throw new BgaUserException(self::_("Not implemented: ") . "$player_id choosing partner card");
@@ -220,7 +260,33 @@ class Sheepshead extends Table
     function playCard($card_id) {
         self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
-        throw new BgaUserException(self::_("Not implemented: ") . "$player_id plays $card_id");
+        // TODO: check rules here
+        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
+        $currentCard = $this->cards->getCard($card_id);
+        if (self::getGameStateValue('trickSuit') == 0) {
+            $card_suit = $currentCard['type'];
+            if (array_key_exists($currentCard ['id'], $this->trumpStrength)) {
+                $card_suit = 4;
+            }
+            self::setGameStateValue('trickSuit', $card_suit);
+        }
+        // And notify
+        self::notifyAllPlayers(
+            'playCard', 
+            clienttranslate('${player_name} plays ${value_displayed} ${suit_displayed}'), 
+            array (
+                'i18n' => array ('suit_displayed','value_displayed' ),
+                'card_id' => $card_id,
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'value' => $currentCard ['type_arg'],
+                'value_displayed' => $this->rank [$currentCard ['type_arg']],
+                'suit' => $currentCard ['type'],
+                'suit_displayed' => $this->suit [$currentCard ['type']] ['name'] 
+            )
+        );
+        // Next player
+        $this->gamestate->nextState('playCard');
     }
     
 //////////////////////////////////////////////////////////////////////////////
@@ -317,17 +383,42 @@ class Sheepshead extends Table
     }
 
     function stNewTrick(){
-        self::setGameStateValue('trickColor', 0);
+        self::setGameStateValue('trickSuit', 0);
         $this->gamestate->nextState("");
     }
 
     function stNextPlayer() {
         // Active next player OR end the trick and go to the next trick OR end the hand
-        if ($this->cards->countCardInLocation('cardsontable') == 4) {
+        $num_players = self::getPlayersNumber();
+        if ($this->cards->countCardInLocation('cardsontable') == $num_players) {
             // This is the end of the trick
             // Move all cards to "cardswon" of the given player
-            $best_value_player_id = self::activeNextPlayer(); // TODO figure out winner of trick
+            $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
+            $best_value_player_id = $this->getTrickWinner($cards_on_table);
+            
+            // Active this player => he's the one who starts the next trick
+            $this->gamestate->changeActivePlayer( $best_value_player_id );
+            
+            // Move all cards to "cardswon" of the given player
             $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
+
+            // Notify
+            $players = self::loadPlayersBasicInfos();
+            self::notifyAllPlayers( 
+                'trickWin', 
+                clienttranslate('${player_name} wins the trick'), 
+                array(
+                    'player_id' => $best_value_player_id,
+                    'player_name' => $players[ $best_value_player_id ]['player_name']
+                ) 
+            );            
+            self::notifyAllPlayers( 
+                'giveAllCardsToPlayer',
+                '', 
+                array(
+                    'player_id' => $best_value_player_id
+                ) 
+            );
         
             if ($this->cards->countCardInLocation('hand') == 0) {
                 // End of the hand
@@ -343,10 +434,47 @@ class Sheepshead extends Table
             self::giveExtraTime($player_id);
             $this->gamestate->nextState('nextPlayer');
         }
+        
     }
 
     function stEndHand() {
-        // TODO: check score / hand count
+        // Count and score points, then end the game or go to the next hand.
+        $players = self::loadPlayersBasicInfos();
+        $player_to_points = $this->calcHandPoints($players);
+
+        // Apply scores to player
+        foreach ( $player_to_points as $player_id => $points ) {
+            if ($points != 0) {
+                $sql = "UPDATE player SET player_score=player_score-$points  WHERE player_id='$player_id'";
+                self::DbQuery($sql);
+                $points = $player_to_points [$player_id];
+                self::notifyAllPlayers(
+                    "points", 
+                    clienttranslate('${player_name} gets ${nbr} points'), 
+                    array (
+                        'player_id' => $player_id,
+                        'player_name' => $players [$player_id] ['player_name'],
+                        'nbr' => $points 
+                    )
+                );
+            } else {
+                // No point lost (just notify)
+                self::notifyAllPlayers(
+                    "points", 
+                    clienttranslate('${player_name} did not get any points'), 
+                    array (
+                        'player_id' => $player_id,
+                        'player_name' => $players [$player_id] ['player_name'] 
+                    )
+                );
+            }
+        }
+        $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true );
+        self::notifyAllPlayers( "newScores", '', array( 'newScores' => $newScores ) );
+
+        // TODO: Test if this is the end of the game
+        // $this->gamestate->nextState("endGame");
+                
         $this->gamestate->nextState("nextHand");
     }
 
