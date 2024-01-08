@@ -24,22 +24,18 @@ class Sheepshead extends Table
 {
 	function __construct( )
 	{
-        // Your global variables labels:
-        //  Here, you can assign labels to global variables you are using for this game.
-        //  You can use any number of global variables with IDs between 10 and 99.
-        //  If your game has options (variants), you also have to associate here a label to
-        //  the corresponding ID in gameoptions.inc.php.
-        // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
         parent::__construct();
-        
         self::initGameStateLabels( array( 
-            //    "my_first_global_variable" => 10,
-            //    "my_second_global_variable" => 11,
-            //      ...
-            //    "my_first_game_variant" => 100,
-            //    "my_second_game_variant" => 101,
-            //      ...
-        ) );        
+            "trickSuit" => 10,
+            "picker" => 11,
+            "partner" => 12, 
+            "pickerAlone" => 13,
+            "partnerCard" => 14,
+            ) 
+        );
+
+        $this->cards = self::getNew( "module.common.deck" );
+        $this->cards->init( "card" );  
 	}
 	
     protected function getGameName( )
@@ -80,8 +76,35 @@ class Sheepshead extends Table
         /************ Start the game initialization *****/
 
         // Init global values with their initial values
-        //self::setGameStateInitialValue( 'my_first_global_variable', 0 );
+        // Set current trick suit to zero (= no trick suit)
+        self::setGameStateInitialValue( 'trickSuit', 0 );
+        // Set picker and partner to zero (= no picker / partner player number)
+        self::setGameStateInitialValue( 'picker', 0 );
+        self::setGameStateInitialValue( 'partner', 0 );
+        // Mark "loner" hand (picker has jack of diamonds and chooses loner)
+        self::setGameStateInitialValue( 'pickerAlone', 0 );
+        // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
+        self::setGameStateInitialValue( 'partnerCard', 48);
+        // Create cards
+        $cards = array ();
+        foreach ( $this->suit as $suit_id => $suit ) {
+            // spade, heart, diamond, club
+            for ($value = 7; $value <= 14; $value ++) {
+                //  7, 8, 9, 10, J, Q, K, A
+                $cards [] = array ('type' => $suit_id,'type_arg' => $value,'nbr' => 1 );
+            }
+        }
         
+        $this->cards->createCards( $cards, 'deck' );
+        
+        //Shuffle deck
+        $this->cards->shuffle('deck');
+        // Deal 6 cards to each player
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $cards = $this->cards->pickCards(6, 'deck', $player_id);
+        }
+
         // Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
         //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
@@ -115,9 +138,14 @@ class Sheepshead extends Table
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
-  
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
-  
+        
+
+        // Cards in player hand
+        $result['hand'] = $this->cards->getCardsInLocation( 'hand', $current_player_id );
+        
+        // Cards played on the table
+        $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
+
         return $result;
     }
 

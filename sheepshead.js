@@ -18,17 +18,15 @@
 define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
-    "ebg/counter"
+    "ebg/counter",
+    "ebg/stock"
 ],
 function (dojo, declare) {
     return declare("bgagame.sheepshead", ebg.core.gamegui, {
         constructor: function(){
             console.log('sheepshead constructor');
-              
-            // Here, you can init the global variables of your user interface
-            // Example:
-            // this.myGlobalValue = 0;
-
+            this.cardwidth = 72;
+            this.cardheight = 96;
         },
         
         /*
@@ -55,10 +53,41 @@ function (dojo, declare) {
                          
                 // TODO: Setting up players boards if needed
             }
+                    
+            // Player hand
+            this.playerHand = new ebg.stock(); // new stock object for hand
+            this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+
+            this.playerHand.image_items_per_row = 13; // 13 images per row
             
-            // TODO: Set up your game interface here, according to "gamedatas"
+            // Create cards types:
+            for (var suit = 1; suit <= 4; suit++) {
+                for (var value = 2; value <= 14; value++) {
+                    // Build card type id
+                    var card_type_id = this.getCardTypeId(suit, value);
+                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
+                }
+            }
+
+            // Cards in player's hand
+            for ( var i in this.gamedatas.hand) {
+                var card = this.gamedatas.hand[i];
+                var suit = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardTypeId(suit, value), card.id);
+            }
+
+            // Cards played on table
+            for (i in this.gamedatas.cardsontable) {
+                var card = this.gamedatas.cardsontable[i];
+                var suit = card.type;
+                var value = card.type_arg;
+                var player_id = card.location_arg;
+                this.playCardOnTable(player_id, suit, value, card.id);
+            }
             
- 
+            dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -150,62 +179,69 @@ function (dojo, declare) {
 
         ///////////////////////////////////////////////////
         //// Utility methods
-        
-        /*
-        
-            Here, you can defines some utility methods that you can use everywhere in your javascript
-            script.
-        
-        */
+
+        // Get card type identifier based on its suit and value
+        getCardTypeId : function(suit, value) {
+            return (suit - 1) * 13 + (value - 2);
+        },
+
+        playCardOnTable : function(player_id, color, value, card_id) {
+            // player_id => direction
+            dojo.place(this.format_block('jstpl_cardontable', {
+                x : this.cardwidth * (value - 2),
+                y : this.cardheight * (color - 1),
+                player_id : player_id
+            }), 'playertablecard_' + player_id);
+
+            if (player_id != this.player_id) {
+                // Some opponent played a card
+                // Move card from player panel
+                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
+            } else {
+                // You played a card. If it exists in your hand, move card from there and remove
+                // corresponding item
+
+                if ($('myhand_item_' + card_id)) {
+                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
+                    this.playerHand.removeFromStockById(card_id);
+                }
+            }
+
+            // In any case: move it to its final destination
+            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
+        },
 
 
         ///////////////////////////////////////////////////
         //// Player's action
         
-        /*
-        
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
-            game objects).
-            
-            Most of the time, these methods:
-            _ check the action is possible at this game state.
-            _ make a call to the game server
-        
-        */
-        
-        /* Example:
-        
-        onMyMethodToCall1: function( evt )
-        {
-            console.log( 'onMyMethodToCall1' );
-            
-            // Preventing default browser reaction
-            dojo.stopEvent( evt );
+        onPlayerHandSelectionChanged: function() {
+            var items = this.playerHand.getSelectedItems();
 
-            // Check that this action is possible (see "possibleactions" in states.inc.php)
-            if( ! this.checkAction( 'myAction' ) )
-            {   return; }
+            if (items.length > 0) {
+                if (this.checkAction('playCard', true)) {
+                    // Can play a card
 
-            this.ajaxcall( "/sheepshead/sheepshead/myAction.html", { 
-                                                                    lock: true, 
-                                                                    myArgument1: arg1, 
-                                                                    myArgument2: arg2,
-                                                                    ...
-                                                                 }, 
-                         this, function( result ) {
-                            
-                            // What to do after the server call if it succeeded
-                            // (most of the time: nothing)
-                            
-                         }, function( is_error) {
+                    var card_id = items[0].id;
+                    var card_type = items[0].type;
+                    var suit = Math.floor(card_type + 13) + 1
+                    var value = card_type % 13 + 2
+                    console.log(
+                        "on playCard id:" + card_id 
+                        + " type:" + card_type
+                        + " suit:" + suit
+                        + " value:" + value);
+                    this.playCardOnTable(this.player_id, suit, value, card_id);                    
+                    
 
-                            // What to do after the server call in anyway (success or failure)
-                            // (most of the time: nothing)
-
-                         } );        
-        },        
-        
-        */
+                    this.playerHand.unselectAll();
+                } else if (this.checkAction('stashCards')) {
+                    // Can give cards => let the player select some cards
+                } else {
+                    this.playerHand.unselectAll();
+                }
+            }
+        },
 
         
         ///////////////////////////////////////////////////

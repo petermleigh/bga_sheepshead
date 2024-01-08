@@ -43,7 +43,7 @@ class view_sheepshead_sheepshead extends game_view
         /*********** Place your code below:  ************/
         $template = self::getGameName() . "_" . self::getGameName();
         
-        $directions = array( 'NE', 'NW', 'SE', 'SW', 'S' );
+        $directions = array('S', 'SE', 'NE', 'NW', 'SW');
         
         // this will inflate our player block with actual players data
         $this->page->begin_block($template, "playerhandblock");
