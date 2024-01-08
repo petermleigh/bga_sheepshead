@@ -31,6 +31,8 @@ class Sheepshead extends Table
             "partner" => 12, 
             "pickerAlone" => 13,
             "partnerCard" => 14,
+            "startPlayer" => 15,
+            "bids" => 16,
             ) 
         );
 
@@ -76,15 +78,7 @@ class Sheepshead extends Table
         /************ Start the game initialization *****/
 
         // Init global values with their initial values
-        // Set current trick suit to zero (= no trick suit)
-        self::setGameStateInitialValue( 'trickSuit', 0 );
-        // Set picker and partner to zero (= no picker / partner player number)
-        self::setGameStateInitialValue( 'picker', 0 );
-        self::setGameStateInitialValue( 'partner', 0 );
-        // Mark "loner" hand (picker has jack of diamonds and chooses loner)
-        self::setGameStateInitialValue( 'pickerAlone', 0 );
-        // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
-        self::setGameStateInitialValue( 'partnerCard', 48);
+        
         // Create cards
         $cards = array ();
         foreach ( $this->suit as $suit_id => $suit ) {
@@ -94,16 +88,32 @@ class Sheepshead extends Table
                 $cards [] = array ('type' => $suit_id,'type_arg' => $value,'nbr' => 1 );
             }
         }
-        
         $this->cards->createCards( $cards, 'deck' );
-        
-        //Shuffle deck
-        $this->cards->shuffle('deck');
-        // Deal 6 cards to each player
+
         $players = self::loadPlayersBasicInfos();
+
+        // Set current trick suit to zero (= no trick suit)
+        self::setGameStateInitialValue( 'trickSuit', 0 );
+        // Set picker and partner to zero (= no picker / partner player number)
+        self::setGameStateInitialValue( 'picker', 0 );
+        self::setGameStateInitialValue( 'partner', 0 );
+        // Mark "loner" hand (picker has jack of diamonds and chooses loner)
+        self::setGameStateInitialValue( 'pickerAlone', 0 );
+        // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
+        self::setGameStateInitialValue( 'partnerCard', 48);
+        // Set the starting player
+        // TODO: make random
+        self::setGameStateInitialValue( 'startPlayer', 0);
+        // Set the starting player
+        self::setGameStateInitialValue( 'bids', 0);
+
+        // initialize 6 cards to each player
         foreach ( $players as $player_id => $player ) {
             $cards = $this->cards->pickCards(6, 'deck', $player_id);
         }
+
+        // TODO: Initialize blind
+        // $blindCards = $this->cards->pickCards(2, 'deck', 0)
 
         // Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
@@ -171,47 +181,47 @@ class Sheepshead extends Table
 //////////// Utility functions
 ////////////    
 
-    /*
-        In this space, you can put any utility methods useful for your game logic
-    */
-
 
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
 //////////// 
 
-    /*
-        Each time a player is doing some game action, one of the methods below is called.
-        (note: each method below must match an input method in sheepshead.action.php)
-    */
-
-    /*
-    
-    Example:
-
-    function playCard( $card_id )
-    {
-        // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
-        self::checkAction( 'playCard' ); 
-        
+    function pick() {
+        self::checkAction("pick");
         $player_id = self::getActivePlayerId();
-        
-        // Add your game logic to play a card there 
-        ...
-        
-        // Notify all players about the card played
-        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
-            'player_id' => $player_id,
-            'player_name' => self::getActivePlayerName(),
-            'card_name' => $card_name,
-            'card_id' => $card_id
-        ) );
-          
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id picks");
     }
-    
-    */
 
+    function pass() {
+        self::checkAction("pass");
+        $player_id = self::getActivePlayerId();
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id passes");
+    }
+
+    function goAlone() {
+        self::checkAction("goAlone");
+        $player_id = self::getActivePlayerId();
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id goes alone");
+    }
+
+    function choosePartner() {
+        self::checkAction("choosePartner");
+        $player_id = self::getActivePlayerId();
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id choosing partner card");
+    }
+
+    function exchangeCard($card_id1, $card_id2) {
+        self::checkAction("exchangeCard");
+        $player_id = self::getActivePlayerId();
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id exchanges $card_id1 and $card_id2");
+    }
+
+    function playCard($card_id) {
+        self::checkAction("playCard");
+        $player_id = self::getActivePlayerId();
+        throw new BgaUserException(self::_("Not implemented: ") . "$player_id plays $card_id");
+    }
     
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state arguments
@@ -243,24 +253,102 @@ class Sheepshead extends Table
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state actions
 ////////////
+    function stNewHand() { 
+        // Set current trick suit to zero (= no trick suit)
+        self::setGameStateValue( 'trickSuit', 0 );
+        // Set picker and partner to zero (= no picker / partner player number)
+        self::setGameStateValue( 'picker', 0 );
+        self::setGameStateValue( 'partner', 0 );
+        // Mark "loner" hand (picker has jack of diamonds and chooses loner)
+        self::setGameStateValue( 'pickerAlone', 0 );
+        // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
+        self::setGameStateValue( 'partnerCard', 48);
+        $last_start_player = self::getGameStateValue('startPlayer');
+        $num_players = self::getPlayersNumber();
+        $next_start_player = ($last_start_player % $num_players) + 1;
+        self::setGameStateValue( 'startPlayer', $next_start_player);
 
-    /*
-        Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
-        The action method of state X is called everytime the current game state is set to X.
-    */
+        // Take back all cards (from any location => null) to deck
+        $this->cards->moveAllCardsInLocation(null, "deck");
+        $this->cards->shuffle('deck');
+        // Deal 6 cards to each player
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $cards = $this->cards->pickCards(6, 'deck', $player_id);
+            // Notify player about his cards
+            self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
+        }
+        // TODO: Initialize blind
+        // $blindCards = $this->cards->pickCards(2, 'deck', 0)
     
-    /*
-    
-    Example for game state "MyGameState":
+        $this->gamestate->nextState("");
+    }
 
-    function stMyGameState()
-    {
-        // Do some stuff ...
+    function stCheckForLoner() {
+        // TODO: if jack of diamonds -> "loner"
+        // else -> "noLoner"
+        $this->gamestate->nextState("noLoner");
+    }
+
+    function stSetLoner() {
+        self::setGameStateValue( 'pickerAlone', 1 );
+        $this->gamestate->nextState("");
+    }
+
+    function stSetStuckBid() {
+        // placeholder for special stuck rules
+        # TODO: self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
+        $this->gamestate->nextState("");
+    }
+    
+    function stNextBidder() {
+        $num_bids = self::getGameStateValue('bids') + 1;
+        $num_players = self::getPlayersNumber();
+        if ($num_bids === $num_players) {
+            $this->gamestate->nextState("stuck");
+        } else {
+            $this->gamestate->nextState("nextBidder");
+        }        
+    }
+
+    function stUpdateGame() {
+        // TODo: update game display
+        $this->gamestate->nextState("");
+    }
+
+    function stNewTrick(){
+        self::setGameStateValue('trickColor', 0);
+        $this->gamestate->nextState("");
+    }
+
+    function stNextPlayer() {
+        // Active next player OR end the trick and go to the next trick OR end the hand
+        if ($this->cards->countCardInLocation('cardsontable') == 4) {
+            // This is the end of the trick
+            // Move all cards to "cardswon" of the given player
+            $best_value_player_id = self::activeNextPlayer(); // TODO figure out winner of trick
+            $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
         
-        // (very often) go to another gamestate
-        $this->gamestate->nextState( 'some_gamestate_transition' );
-    }    
-    */
+            if ($this->cards->countCardInLocation('hand') == 0) {
+                // End of the hand
+                $this->gamestate->nextState("endHand");
+            } else {
+                // End of the trick
+                $this->gamestate->nextState("nextTrick");
+            }
+        } else {
+            // Standard case (not the end of the trick)
+            // => just active the next player
+            $player_id = self::activeNextPlayer();
+            self::giveExtraTime($player_id);
+            $this->gamestate->nextState('nextPlayer');
+        }
+    }
+
+    function stEndHand() {
+        // TODO: check score / hand count
+        $this->gamestate->nextState("nextHand");
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Zombie
