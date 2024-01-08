@@ -139,7 +139,7 @@ class Sheepshead extends Table
     {
         $result = array();
     
-        $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
+        $current_player_id = self::getCurrentPlayerId();
     
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
@@ -176,30 +176,43 @@ class Sheepshead extends Table
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Utility functions
-////////////    
+////////////
 
-    function getTrickWinner($cards_on_table) {
-        
+    function isTrump($card) {
+        return ($card['type'] == 4 || $card['type_arg'] == 11 || $card['type_arg'] == 12);
+    }
+
+    function isCardPlayable($card, $player_id) {
+        $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $player_id );
+        $currentTrickSuit = self::getGameStateValue('trickSuit');
+        // if played card is same suit as trick or no trick suit yet
+        if ($currentTrickSuit == 0 || $card['type'] == $currentTrickSuit){
+            return true;
+        }
+        // only allow non trick suit play if void in trick suit
+        foreach ($cards_in_hand as $card) {
+            if ($card['type'] == $currentTrickSuit) {
+                return false;
+            }
+        }
+        // all cards are not in trick suit so player can play whatever they want
+        return true;
+    }
+
+    function getTrickWinner($cards_on_table) {        
         $best_value = 0;
         $best_value_player_id = null;
         $currentTrickSuit = self::getGameStateValue('trickSuit');
         foreach ( $cards_on_table as $card ) {
             // Note: type = card suit
-            $card_value = 0;
-            $is_trump = false;
-            if (array_key_exists($card ['type_arg'], $this->cardStrength)) {
-                $card_value = $this->cardStrength [$card ['type_arg']];
-            }
-            
-            if (array_key_exists($card ['id'], $this->trumpStrength)) {
-                $card_value = $this->trumpStrength [$card ['id']];
-                $is_trump = true;
-            }
+            $card_rank = $card['type_arg'];
+            $card_suit = $card['type'];
+            $card_power = $this->cardPower[$card_suit][$card_rank];
 
-            if ($card ['type'] == $currentTrickSuit || $is_trump) {
-                if ($best_value_player_id === null || $card_value > $best_value) {
-                    $best_value_player_id = $card ['location_arg']; // Note: location_arg = player who played this card on table
-                    $best_value = $card_value; // Note: type_arg = value of the card
+            if ($card_suit == $currentTrickSuit || $this->isTrump($card)) {
+                if ($best_value_player_id === null || $card_power > $best_value) {
+                    $best_value_player_id = $card ['location_arg']; // location_arg = player who played this card on table
+                    $best_value = $card_power;
                 }
             }
         }
@@ -215,7 +228,6 @@ class Sheepshead extends Table
         $cards = $this->cards->getCardsInLocation("cardswon");
         foreach ( $cards as $card ) {
             $player_id = $card ['location_arg'];
-            // Note: 2 = heart
             if (array_key_exists($card ['type_arg'], $this->points)) {
                 $player_to_points [$player_id] += $this->points [$card ['type_arg']];
             }
@@ -260,12 +272,15 @@ class Sheepshead extends Table
     function playCard($card_id) {
         self::checkAction("playCard");
         $player_id = self::getActivePlayerId();
-        // TODO: check rules here
-        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         $currentCard = $this->cards->getCard($card_id);
+        if ( ! $this->isCardPlayable($currentCard, $player_id)) {
+            $this->gamestate->nextState('unplayable');
+            return;
+        }
+        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         if (self::getGameStateValue('trickSuit') == 0) {
             $card_suit = $currentCard['type'];
-            if (array_key_exists($currentCard ['id'], $this->trumpStrength)) {
+            if ($this->isTrump(($currentCard))) {
                 $card_suit = 4;
             }
             self::setGameStateValue('trickSuit', $card_suit);
@@ -273,7 +288,7 @@ class Sheepshead extends Table
         // And notify
         self::notifyAllPlayers(
             'playCard', 
-            clienttranslate('${player_name} plays ${value_displayed} ${suit_displayed}'), 
+            clienttranslate('${player_name} plays ${value_displayed} of ${suit_displayed}'), 
             array (
                 'i18n' => array ('suit_displayed','value_displayed' ),
                 'card_id' => $card_id,
@@ -351,8 +366,19 @@ class Sheepshead extends Table
     }
 
     function stCheckForLoner() {
-        // TODO: if jack of diamonds -> "loner"
-        // else -> "noLoner"
+        $current_player_id = self::getCurrentPlayerId();
+        $partner_card = self::getGameStateValue('partnerCard');
+        // player picked, give them the blind
+        $blind_cards = $this->cards->pickCards(2, 'deck', $current_player_id);
+        // get all cards in player hand
+        $cards = $this->cards->getCardsInLocation( 'hand', $current_player_id );
+        self::notifyPlayer($current_player_id, 'newHand', '', array ('cards' => $cards ));
+        foreach ($cards as $card_id => $card) {
+            if ($card_id == $partner_card) {
+                $this->gamestate->nextState("loner");
+                return;
+            }
+        }
         $this->gamestate->nextState("noLoner");
     }
 

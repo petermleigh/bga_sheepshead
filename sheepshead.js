@@ -129,7 +129,7 @@ function (dojo, declare) {
         //
         onLeavingState: function( stateName )
         {
-            console.log( 'Leaving state: '+stateName );
+            console.log( 'Leaving state: ' + stateName );
             
             switch( stateName )
             {
@@ -222,7 +222,7 @@ function (dojo, declare) {
                 var action = 'playCard';
                 if (this.checkAction(action, true)) {
                     // Can play a card
-                    var card_id = items[0].id;                    
+                    var card_id = items[0].id;                  
                     this.ajaxcall(
                         "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
                         {
@@ -236,7 +236,6 @@ function (dojo, declare) {
                         }
                     );
                     this.playerHand.unselectAll();
-                    console.log( 'sent card to server' );
                 } else if (this.checkAction('stashCards')) {
                     // Can give cards => let the player select some cards
                 } else {
@@ -268,7 +267,6 @@ function (dojo, declare) {
             dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer" );
             dojo.subscribe('newScores', this, "notif_newScores" );
  
-
             this.notifqueue.setSynchronous( 'trickWin', 1000 );
 
         },  
