@@ -115,7 +115,7 @@ $machinestates = array(
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
         "descriptionmyturn" => clienttranslate('${you} must put 2 cards in the Blind (these will be added to your score at the end of the hand)'),
         "type" => "activeplayer",
-        // TODO: "args" => "argExchangeCards",
+        // TODO: ???  "args" => "argExchangeCards",
         "possibleactions" => array( "exchangeCard" ),
         "transitions" => array( "exchangeCard" => 20 )
     ),
@@ -139,7 +139,7 @@ $machinestates = array(
         "name" => "updateBid",
         "description" => "",
         "type" => "game",
-        "action" => "stUpdateGame",
+        "action" => "stUpdateBid",
         "transitions" => array( "" => 30 )
     ),
 

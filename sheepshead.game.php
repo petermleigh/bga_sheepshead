@@ -33,6 +33,7 @@ class Sheepshead extends Table
             "partnerCard" => 14,
             "startPlayer" => 15,
             "bids" => 16,
+            "hands" => 17
             ) 
         );
 
@@ -101,11 +102,12 @@ class Sheepshead extends Table
         self::setGameStateInitialValue( 'pickerAlone', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         self::setGameStateInitialValue( 'partnerCard', 48);
-        // Set the starting player
-        // TODO: make random
+        // Set the starting player (BGA makes random start player)
         self::setGameStateInitialValue( 'startPlayer', 0);
-        // Set the starting player
+        // Set the number of bids
         self::setGameStateInitialValue( 'bids', 0);
+        // Set the number of hands
+        self::setGameStateInitialValue( 'hands', 0);
 
         // TODO: Init game statistics
         // (note: statistics used in this file must be defined in your stats.inc.php file)
@@ -117,13 +119,7 @@ class Sheepshead extends Table
         // self::initStat( 'player', 'player_numPartner', 0 );  
         // self::initStat( 'player', 'player_numStuckPick', 0 );
 
-        // TODO: setup the initial game situation here
-       
-
-        // Activate first player (which is in general a good idea :) )
         $this->activeNextPlayer();
-
-        /************ End of the game initialization *****/
     }
 
     /*
@@ -182,21 +178,44 @@ class Sheepshead extends Table
         return ($card['type'] == 4 || $card['type_arg'] == 11 || $card['type_arg'] == 12);
     }
 
+    function isEndOfGame($num_hands) {
+        // end game after 3 rounds
+        return ($num_hands >= 15);
+    }
+
+    function isPickingTeam($player_id) {
+        $picker_id = self::getGameStateValue('picker');
+        $partner_id = self::getGameStateValue('partner');
+        return ($player_id == $picker_id || $player_id == $partner_id);
+    }
+
+    function isLonerHand() {
+        $partner_id = self::getGameStateValue('partner');
+        return ($partner_id == 0);
+    }
+
     function isCardPlayable($card, $player_id) {
         $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $player_id );
         $currentTrickSuit = self::getGameStateValue('trickSuit');
         // if played card is same suit as trick or no trick suit yet
-        if ($currentTrickSuit == 0 || $card['type'] == $currentTrickSuit){
+        if ($currentTrickSuit == 0 || $this->getCardSuit($card) == $currentTrickSuit){
             return true;
         }
         // only allow non trick suit play if void in trick suit
         foreach ($cards_in_hand as $card) {
-            if ($card['type'] == $currentTrickSuit) {
+            if ($this->getCardSuit($card) == $currentTrickSuit) {
                 return false;
             }
         }
         // all cards are not in trick suit so player can play whatever they want
         return true;
+    }
+
+    function getCardSuit($card) {
+        if ($this->isTrump($card)) {
+            return 4;  // All trump treated as a diamond
+        }
+        return $card['type'];
     }
 
     function getTrickWinner($cards_on_table) {        
@@ -220,19 +239,88 @@ class Sheepshead extends Table
     }
 
     function calcHandPoints($players) {
-        $player_to_points = array ();
+        $player_hand_points = array ();
         foreach ( $players as $player_id => $player ) {
-            $player_to_points [$player_id] = 0;
+            $player_hand_points [$player_id] = 0;
         }
 
         $cards = $this->cards->getCardsInLocation("cardswon");
         foreach ( $cards as $card ) {
             $player_id = $card ['location_arg'];
             if (array_key_exists($card ['type_arg'], $this->points)) {
-                $player_to_points [$player_id] += $this->points [$card ['type_arg']];
+                $player_hand_points [$player_id] += $this->points [$card ['type_arg']];
             }
         }
-        return $player_to_points;
+        return $player_hand_points;
+    }
+
+    function calcPoints($player_hand_points) {    
+        
+        $picker_id = self::getGameStateValue('picker');
+        $partner_id = self::getGameStateValue('partner');
+
+        $picking_hand_points = 0;
+        $opposing_hand_points = 0;
+        $picker_points = 0;
+        $partner_points = 0;
+        $opposing_points = 0;
+
+        foreach ($player_hand_points as $player_id => $hand_points) {
+            if ($this->isPickingTeam($player_id)) {
+                $picking_hand_points = $picking_hand_points + $hand_points;
+            }     
+            else {
+                $opposing_hand_points = $opposing_hand_points + $hand_points;
+            }
+        }
+        if ($picking_hand_points == 120) {
+            $picker_points = 6;
+            $partner_points = 3;
+            $opposing_points = -3;
+        }
+        else if ($picking_hand_points >= 91) {
+            $picker_points = 4;
+            $partner_points = 2;
+            $opposing_points = -2;
+        }
+        else if ($picking_hand_points >= 61) {
+            $picker_points = 2;
+            $partner_points = 1;
+            $opposing_points = -1;
+        }
+        else if ($picking_hand_points >= 31) {
+            $picker_points = -2;
+            $partner_points = -1;
+            $opposing_points = 1;
+        }
+        else if ($picking_hand_points >= 1) {
+            $picker_points = -4;
+            $partner_points = -2;
+            $opposing_points = 2;
+        }
+        else if ($picking_hand_points == 0) {
+            $picker_points = -9;
+            $partner_points = 0;
+            $opposing_points = 3;
+        }
+
+        if ($this->isLonerHand()) {
+            $picker_points = $picker_points + $partner_points;
+        }
+        
+        $player_points = array ();
+        foreach ( $player_hand_points as $player_id => $player ) {
+            if ($player_id == $picker_id) {
+                $player_points [$player_id] = $picker_points;
+            }     
+            else if ($player_id == $partner_id) {
+                $player_points [$player_id] = $partner_points;
+            }     
+            else {
+                $player_points [$player_id] = $opposing_points;
+            }
+        }
+        return $player_points;
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -248,7 +336,17 @@ class Sheepshead extends Table
     function pass() {
         self::checkAction("pass");
         $player_id = self::getActivePlayerId();
-        throw new BgaUserException(self::_("Not implemented: ") . "$player_id passes");
+        self::notifyAllPlayers(
+            'playerPassed', 
+            clienttranslate('${player_name} passed'), 
+            array (
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+
+            )
+        );
+        // Next bidder
+        $this->gamestate->nextState('pass');
     }
 
     function goAlone() {
@@ -266,7 +364,8 @@ class Sheepshead extends Table
     function exchangeCard($card_id1, $card_id2) {
         self::checkAction("exchangeCard");
         $player_id = self::getActivePlayerId();
-        throw new BgaUserException(self::_("Not implemented: ") . "$player_id exchanges $card_id1 and $card_id2");
+        $this->cards->moveCard($card_id1, 'cardswon', $player_id);
+        $this->cards->moveCard($card_id2, 'cardswon', $player_id);
     }
 
     function playCard($card_id) {
@@ -279,11 +378,7 @@ class Sheepshead extends Table
         }
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         if (self::getGameStateValue('trickSuit') == 0) {
-            $card_suit = $currentCard['type'];
-            if ($this->isTrump(($currentCard))) {
-                $card_suit = 4;
-            }
-            self::setGameStateValue('trickSuit', $card_suit);
+            self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
         // And notify
         self::notifyAllPlayers(
@@ -344,10 +439,18 @@ class Sheepshead extends Table
         self::setGameStateValue( 'pickerAlone', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         self::setGameStateValue( 'partnerCard', 48);
-        $last_start_player = self::getGameStateValue('startPlayer');
-        $num_players = self::getPlayersNumber();
-        $next_start_player = ($last_start_player % $num_players) + 1;
-        self::setGameStateValue( 'startPlayer', $next_start_player);
+        // reset bid number
+        self::setGameStateValue( 'bids', 0);
+        // set the start player
+        $start_player_id = self::getGameStateValue('startPlayer');
+        if ($start_player_id == 0) {
+            $start_player_id = self::getActivePlayerId();
+        }
+        else {
+            $start_player_id = self::getPlayerAfter( $start_player_id );
+        }
+        self::setGameStateValue( 'startPlayer', $start_player_id);
+        $this->gamestate->changeActivePlayer($start_player_id);
 
         // Take back all cards (from any location => null) to deck
         $this->cards->moveAllCardsInLocation(null, "deck");
@@ -359,8 +462,6 @@ class Sheepshead extends Table
             // Notify player about his cards
             self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
         }
-        // TODO: Initialize blind
-        // $blindCards = $this->cards->pickCards(2, 'deck', 0)
     
         $this->gamestate->nextState("");
     }
@@ -389,7 +490,7 @@ class Sheepshead extends Table
 
     function stSetStuckBid() {
         // placeholder for special stuck rules
-        # TODO: self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
+        // TODO: self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
         $this->gamestate->nextState("");
     }
     
@@ -401,10 +502,16 @@ class Sheepshead extends Table
         } else {
             $this->gamestate->nextState("nextBidder");
         }        
+        self::setGameStateValue('bids', $num_bids);
     }
 
-    function stUpdateGame() {
-        // TODo: update game display
+    function stUpdateBid() {
+        $start_player_id = self::getGameStateValue('startPlayer');
+        $second_player_id = self::getPlayerAfter( $start_player_id );
+        self::setGameStateValue('picker', $start_player_id);
+        self::setGameStateValue('partner', $second_player_id);
+
+        // self::notifyAllPlayers( 'message', clienttranslate('hello'), [] );
         $this->gamestate->nextState("");
     }
 
@@ -466,42 +573,64 @@ class Sheepshead extends Table
     function stEndHand() {
         // Count and score points, then end the game or go to the next hand.
         $players = self::loadPlayersBasicInfos();
-        $player_to_points = $this->calcHandPoints($players);
+        $player_hand_points = $this->calcHandPoints($players);
+        $player_points = $this->calcPoints($player_hand_points);
 
         // Apply scores to player
-        foreach ( $player_to_points as $player_id => $points ) {
-            if ($points != 0) {
-                $sql = "UPDATE player SET player_score=player_score-$points  WHERE player_id='$player_id'";
-                self::DbQuery($sql);
-                $points = $player_to_points [$player_id];
-                self::notifyAllPlayers(
-                    "points", 
-                    clienttranslate('${player_name} gets ${nbr} points'), 
-                    array (
-                        'player_id' => $player_id,
-                        'player_name' => $players [$player_id] ['player_name'],
-                        'nbr' => $points 
-                    )
-                );
-            } else {
-                // No point lost (just notify)
-                self::notifyAllPlayers(
-                    "points", 
-                    clienttranslate('${player_name} did not get any points'), 
-                    array (
-                        'player_id' => $player_id,
-                        'player_name' => $players [$player_id] ['player_name'] 
-                    )
-                );
-            }
+        foreach ( $player_points as $player_id => $points ) {
+            $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
+            self::DbQuery($sql);
+            self::notifyAllPlayers(
+                "points", 
+                clienttranslate('${player_name} gets ${nbr} points'), 
+                array (
+                    'player_id' => $player_id,
+                    'player_name' => $players [$player_id] ['player_name'],
+                    'nbr' => $points 
+                )
+            );
         }
-        $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true );
-        self::notifyAllPlayers( "newScores", '', array( 'newScores' => $newScores ) );
+        $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true );
+        self::notifyAllPlayers( "newScores", '', array( 'newScores' => $new_scores ) );
+        // display table of scores
+        $table = array(
+            array(
+                clienttranslate("Player Name"), 
+                clienttranslate("Points Taken"),
+                clienttranslate("Team"),
+                clienttranslate("Last Hand Score"), 
+                clienttranslate("Current Score"),
+            ) 
+        );
+        foreach ($player_hand_points as $player_id => $hand_points) {
+            $team = clienttranslate("Opposing");
+            if ($this->isPickingTeam($player_id)) {
+                $team = clienttranslate("Picking");
+            }
+            $table[] = array(
+                $players[$player_id]['player_name'],
+                $hand_points,
+                $team,
+                $player_points[$player_id],
+                $new_scores[$player_id],
+            );
+        }
 
-        // TODO: Test if this is the end of the game
-        // $this->gamestate->nextState("endGame");
-                
-        $this->gamestate->nextState("nextHand");
+        $this->notifyAllPlayers( "tableWindow", '', array(
+            "id" => 'Scoring',
+            "title" => clienttranslate("Hand Result"),
+            "table" => $table
+        )); 
+
+        $num_hands = self::getGameStateValue('hands') + 1;
+        $end_of_game = $this->isEndOfGame($num_hands);
+        if ($end_of_game){
+            $this->gamestate->nextState("endGame");
+        }
+        else{
+            self::setGameStateValue('hands', $num_hands);
+            $this->gamestate->nextState("nextHand");
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////

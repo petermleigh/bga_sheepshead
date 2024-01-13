@@ -236,8 +236,22 @@ function (dojo, declare) {
                         }
                     );
                     this.playerHand.unselectAll();
-                } else if (this.checkAction('stashCards')) {
-                    // Can give cards => let the player select some cards
+                } else if (this.checkAction('stashCards')) { 
+                    var card_id1 = items[0].id;   
+                    var card_id2 = items[1].id;                
+                    this.ajaxcall(
+                        "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
+                        {
+                            id1 : card_id1,
+                            id2 : card_id2,
+                            lock : true
+                        }, 
+                        this, 
+                        function(result) {
+                        }, 
+                        function(is_error) {
+                        }
+                    );
                 } else {
                     this.playerHand.unselectAll();
                 }
