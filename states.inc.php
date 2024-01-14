@@ -68,7 +68,7 @@ $machinestates = array(
         "type" => "game",
         "action" => "stNewHand",
         "updateGameProgression" => true,
-        "transitions" => array( "" => 20 ) // TODO: change back to 10
+        "transitions" => array( "" => 10 )
     ),
 
     // Bid Round
@@ -108,6 +108,7 @@ $machinestates = array(
         "descriptionmyturn" => clienttranslate('${you} must choose another card for the partner.'),
         "type" => "activeplayer",
         "possibleactions" => array( "pickPartnerCard" ),
+        // TODO: ???  "args" => "argChoosePartnerCard",
         "transitions" => array( "pickPartnerCard" => 15 )
     ),
     15 => array(
@@ -115,9 +116,8 @@ $machinestates = array(
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
         "descriptionmyturn" => clienttranslate('${you} must put 2 cards in the Blind (these will be added to your score at the end of the hand)'),
         "type" => "activeplayer",
-        // TODO: ???  "args" => "argExchangeCards",
-        "possibleactions" => array( "exchangeCard" ),
-        "transitions" => array( "exchangeCard" => 20 )
+        "possibleactions" => array( "exchangeCards" ),
+        "transitions" => array( "exchangeCards" => 20 )
     ),
     16 => array(
         "name" => "setStuckBid",

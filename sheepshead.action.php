@@ -59,16 +59,22 @@
 
     function choosePartner() {
         self::setAjaxMode();
-        $card_id = self::getArg("id", AT_posint, true);
-        $this->game->choosePartner($card_id);
+        $this->game->choosePartner();
         self::ajaxResponse();
     }
 
-    function exchangeCard() {
+    function pickPartnerCard() {
+        self::setAjaxMode();
+        $card_id = self::getArg("id", AT_posint, true);
+        $this->game->pickPartnerCard($card_id);
+        self::ajaxResponse();
+    }
+
+    function exchangeCards() {
         self::setAjaxMode();
         $card_id1 = self::getArg("id1", AT_posint, true);
         $card_id2 = self::getArg("id2", AT_posint, true);
-        $this->game->choosePartner($card_id1, $card_id2);
+        $this->game->exchangeCards($card_id1, $card_id2);
         self::ajaxResponse();
     }
 

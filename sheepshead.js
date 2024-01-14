@@ -45,15 +45,7 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log( "Starting game setup" );
-            
-            // Setting up player boards
-            for( var player_id in gamedatas.players )
-            {
-                var player = gamedatas.players[player_id];
-                         
-                // TODO: Setting up players boards if needed
-            }
-                    
+                                
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
@@ -107,17 +99,6 @@ function (dojo, declare) {
             
             switch( stateName )
             {
-            
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Show some HTML block at this game state
-                dojo.style( 'my_html_block_id', 'display', 'block' );
-                
-                break;
-           */
-           
            
             case 'dummmy':
                 break;
@@ -134,17 +115,6 @@ function (dojo, declare) {
             switch( stateName )
             {
             
-            /* Example:
-            
-            case 'myGameState':
-            
-                // Hide the HTML block we are displaying only during this game state
-                dojo.style( 'my_html_block_id', 'display', 'none' );
-                
-                break;
-           */
-           
-           
             case 'dummmy':
                 break;
             }               
@@ -161,18 +131,22 @@ function (dojo, declare) {
             {            
                 switch( stateName )
                 {
-/*               
-                 Example:
- 
-                 case 'myGameState':
+                    case 'bid':
+                        this.addActionButton( 'pick_button', _('Pick'), ()=>this.ajaxcallwrapper('pick'));
+                        this.addActionButton( 'pass_button', _('Pass'), ()=>this.ajaxcallwrapper('pass'));
+                        break;
                     
-                    // Add 3 action buttons in the action status bar:
+                    case 'chooseLoner':
+                        this.addActionButton( 'goAlone_button', _('Go Alone'), ()=>this.ajaxcallwrapper('goAlone'));
+                        this.addActionButton( 'choosePartner_button', _('Choose a Parner Card'), ()=>this.ajaxcallwrapper('choosePartner'));
+                        break;
                     
-                    this.addActionButton( 'button_1_id', _('Button 1 label'), 'onMyMethodToCall1' ); 
-                    this.addActionButton( 'button_2_id', _('Button 2 label'), 'onMyMethodToCall2' ); 
-                    this.addActionButton( 'button_3_id', _('Button 3 label'), 'onMyMethodToCall3' ); 
-                    break;
-*/
+                    // case 'pickPartnerCard':
+                    //     break;
+                    
+                    case 'exchangeCards':
+                        this.addActionButton( 'confirmExchange_button', _('Confirm'), 'onExchangeCards')
+
                 }
             }
         },        
@@ -211,47 +185,50 @@ function (dojo, declare) {
             this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
         },
 
+        ajaxcallwrapper: function(action, args, handler) {
+            if (!args) {
+                args = {};
+            }
+            args.lock = true;
+
+            if (this.checkAction(action)) {
+                this.ajaxcall("/" + this.game_name + "/" + this.game_name + "/" + action + ".html", args, this, (result) => { }, handler);
+            }
+        },
+
 
         ///////////////////////////////////////////////////
         //// Player's action
         
+        onExchangeCards: function() {
+            var items = this.playerHand.getSelectedItems();
+            if (items.length == 2) {
+                if (this.checkAction('exchangeCards', true)) {
+                    this.ajaxcallwrapper('exchangeCards', {id1 : items[0].id, id2 : items[1].id, lock : true})
+                    this.playerHand.unselectAll();
+                    this.playerHand.removeFromStockById(items[0].id);
+                    this.playerHand.removeFromStockById(items[1].id);
+
+                }
+            }
+
+        },
+
         onPlayerHandSelectionChanged: function() {
             var items = this.playerHand.getSelectedItems();
+            console.log( 'onPlayerHandSelectionChanged: '+items );
 
             if (items.length > 0) {
-                var action = 'playCard';
-                if (this.checkAction(action, true)) {
-                    // Can play a card
-                    var card_id = items[0].id;                  
-                    this.ajaxcall(
-                        "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
-                        {
-                            id : card_id,
-                            lock : true
-                        }, 
-                        this, 
-                        function(result) {
-                        }, 
-                        function(is_error) {
-                        }
-                    );
+                if (this.checkAction('playCard', true)) {
+                    this.ajaxcallwrapper('playCard', {id : items[0].id, lock : true})
                     this.playerHand.unselectAll();
-                } else if (this.checkAction('stashCards')) { 
-                    var card_id1 = items[0].id;   
-                    var card_id2 = items[1].id;                
-                    this.ajaxcall(
-                        "/" + this.game_name + "/" + this.game_name + "/" + action + ".html", 
-                        {
-                            id1 : card_id1,
-                            id2 : card_id2,
-                            lock : true
-                        }, 
-                        this, 
-                        function(result) {
-                        }, 
-                        function(is_error) {
-                        }
-                    );
+                } else if (this.checkAction('exchangeCards', true)) {
+                    // TODO: unselect first card when 3rd card selected 
+                    if (items.length > 2) {
+                        var last_selected_id = items.pop().id;
+                        this.playerHand.unselectAll();
+                        this.playerHand.selectItem(last_selected_id);
+                    }     
                 } else {
                     this.playerHand.unselectAll();
                 }
