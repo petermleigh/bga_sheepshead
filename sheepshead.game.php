@@ -101,8 +101,6 @@ class Sheepshead extends Table
         self::setGameStateInitialValue( 'partnerCard', 48);
         // Set the dealer player (BGA makes random start player, will make that first player in startHand below)
         self::setGameStateInitialValue( 'dealer', 0);
-        // Set the number of bids
-        self::setGameStateInitialValue( 'bids', 0);
         // Set the number of hands
         self::setGameStateInitialValue( 'hands', 0);
 
@@ -473,8 +471,6 @@ class Sheepshead extends Table
         self::setGameStateValue( 'partner', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         self::setGameStateValue( 'partnerCard', 48);
-        // reset bid number
-        self::setGameStateValue( 'bids', 0);
         // set the start player
         $dealer_id = self::getGameStateValue('dealer');
         if ($dealer_id == 0) {
@@ -496,13 +492,20 @@ class Sheepshead extends Table
             $cards = $this->cards->pickCards(6, 'deck', $player_id);
             // Notify player about his cards
             self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
-        }
-    
+        }        
+        self::notifyAllPlayers( 
+            'message',
+            clienttranslate('${player_name} is the dealer'), 
+            array(
+                'player_id' => $dealer_id,
+                'player_name' => $players[ $dealer_id ]['player_name']
+            ) 
+        );    
         $this->gamestate->nextState("");
     }
 
     function stCheckForLoner() {
-        $current_player_id = self::getCurrentPlayerId();
+        $current_player_id = self::getActivePlayerId();
         $partner_card = self::getGameStateValue('partnerCard');
         // player picked, give them the blind
         $blind_cards = $this->cards->pickCards(2, 'deck', $current_player_id);
@@ -525,19 +528,27 @@ class Sheepshead extends Table
     }
 
     function stSetStuckBid() {
-        // placeholder for special stuck rules
+        // placeholder for special stuck rules 
+        $player_id = self::getActivePlayerId();
+        $players = self::loadPlayersBasicInfos();             
+        self::notifyAllPlayers( 
+            'message',
+            clienttranslate('${player_name} is stuck and must pick'), 
+            array(
+                'player_id' => $player_id,
+                'player_name' => $players[$player_id]['player_name']
+            ) 
+        );
         $this->gamestate->nextState("");
     }
     
     function stNextBidder() {
-        $num_bids = self::getGameStateValue('bids') + 1;
-        $num_players = self::getPlayersNumber();
-        self::setGameStateValue('bids', $num_bids);
-        if ($num_bids === $num_players) {
+        $player_id = self::activeNextPlayer();
+        self::giveExtraTime($player_id);
+        $dealer_id = self::getGameStateValue('dealer');
+        if ($player_id == $dealer_id) {
             $this->gamestate->nextState("stuck");
         } else {
-            $player_id = self::activeNextPlayer();
-            self::giveExtraTime($player_id);
             $this->gamestate->nextState("nextBidder");
         }        
     }
@@ -545,7 +556,7 @@ class Sheepshead extends Table
     function stUpdateBid() {
         $dealer_id = self::getGameStateValue('dealer');
         // set the picker and partner
-        $picker_id = self::getCurrentPlayerId();
+        $picker_id = self::getActivePlayerId();
         $partner_id = $this->getPartnerId();
         self::setGameStateValue('picker', $picker_id);
         self::setGameStateValue('partner', $partner_id);
@@ -639,15 +650,6 @@ class Sheepshead extends Table
         foreach ( $player_points as $player_id => $points ) {
             $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
             self::DbQuery($sql);
-            self::notifyAllPlayers(
-                "points", 
-                clienttranslate('${player_name} gets ${nbr} points'), 
-                array (
-                    'player_id' => $player_id,
-                    'player_name' => $players [$player_id] ['player_name'],
-                    'nbr' => $points 
-                )
-            );
         }
         $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true );
         self::notifyAllPlayers( "newScores", '', array( 'newScores' => $new_scores ) );
