@@ -174,7 +174,7 @@ class Sheepshead extends Table
     function getCardFromNo($card_no) {
         return array(
             'type' => intdiv($card_no, 13) + 1,
-            'type_arg' => $card_value = ($card_no % 13) + 2,
+            'type_arg' => ($card_no % 13) + 2,
         );
     }
 
@@ -378,10 +378,15 @@ class Sheepshead extends Table
         $this->gamestate->nextState('choosePartner');
     }
 
-    function pickPartnerCard($card_id) {
-        self::checkAction("pickPartnerCard");
-        $player_id = self::getActivePlayerId();
-        throw new BgaUserException(self::_("Not implemented: ") . "$player_id choosing partner card");
+    function choosePartnerCard($card_no) {
+        self::checkAction("choosePartnerCard");
+        if ($card_no == 0) {
+            $this->gamestate->nextState('goAlone');
+        }
+        else {
+            self::setGameStateValue('partnerCard', $card_no);
+            $this->gamestate->nextState('choosePartnerCard');
+        }
     }
 
     function exchangeCards($card_id1, $card_id2) {
@@ -404,19 +409,18 @@ class Sheepshead extends Table
         if (self::getGameStateValue('trickSuit') == 0) {
             self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
-        // And notify
+        // TODO: remove from game log
         self::notifyAllPlayers(
             'playCard', 
-            clienttranslate('${player_name} plays ${value_displayed} of ${suit_displayed}'), 
+            clienttranslate('${player_name} plays ${card_uni}'), 
             array (
-                'i18n' => array ('suit_displayed','value_displayed' ),
+                'i18n' => array('card_uni'),
                 'card_id' => $card_id,
                 'player_id' => $player_id,
                 'player_name' => self::getActivePlayerName(),
-                'value' => $currentCard ['type_arg'],
-                'value_displayed' => $this->rank [$currentCard ['type_arg']],
-                'suit' => $currentCard ['type'],
-                'suit_displayed' => $this->suit [$currentCard ['type']] ['name'] 
+                'value' => $currentCard['type_arg'],
+                'suit' => $currentCard['type'], 
+                'card_uni' => $this->cardUnicode[$currentCard['type']][$currentCard['type_arg']]
             )
         );
         // Next player
@@ -433,22 +437,30 @@ class Sheepshead extends Table
         game state.
     */
 
-    /*
-    
-    Example for game state "MyGameState":
-    
-    function argMyGameState()
-    {
-        // Get some values from the current game situation in database...
-    
-        // return values:
-        return array(
-            'variable1' => $value1,
-            'variable2' => $value2,
-            ...
+    function argChoosePartnerCard() {
+        $player_id = self::getActivePlayerId();
+        $available_jacks = array(
+            1 => array(
+                'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => 11)), 
+                'card_uni' => $this->cardUnicode[1][11]
+            ),
+            2 => array(
+                'card_no' => $this->getNofromCard(array('type' => 2, 'type_arg' => 11)), 
+                'card_uni' => $this->cardUnicode[2][11]
+            ),  
+            3 => array(
+                'card_no' => $this->getNofromCard(array('type' => 3, 'type_arg' => 11)), 
+                'card_uni' => $this->cardUnicode[3][11]
+            ),  
         );
-    }    
-    */
+        $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $player_id );
+        foreach ($cards_in_hand as $card) {
+            if ($card['type_arg'] == 11) {
+                unset($available_jacks[$card['type']]);
+            }
+        }
+        return array_values($available_jacks);
+    }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state actions

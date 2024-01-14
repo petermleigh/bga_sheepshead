@@ -107,9 +107,9 @@ $machinestates = array(
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
         "descriptionmyturn" => clienttranslate('${you} must choose another card for the partner.'),
         "type" => "activeplayer",
-        "possibleactions" => array( "pickPartnerCard" ),
-        // TODO: ???  "args" => "argChoosePartnerCard",
-        "transitions" => array( "pickPartnerCard" => 15 )
+        "possibleactions" => array( "choosePartnerCard", "goAlone" ),
+        "args" => "argChoosePartnerCard",
+        "transitions" => array( "choosePartnerCard" => 15, "goAlone" => 13 )
     ),
     15 => array(
         "name" => "exchangeCards",

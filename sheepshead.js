@@ -141,12 +141,21 @@ function (dojo, declare) {
                         this.addActionButton( 'choosePartner_button', _('Choose a Parner Card'), ()=>this.ajaxcallwrapper('choosePartner'));
                         break;
                     
-                    // case 'pickPartnerCard':
-                    //     break;
+                    case 'choosePartnerCard':
+                        for (let i = 0; i < args.length; i++) {
+                            let card_no = args[i]['card_no'];
+                            let card_uni = args[i]['card_uni'];
+                            let button_name = `${card_no}Partner_button`;
+                            let button_text = _(`${card_uni}`);
+                            this.addActionButton(button_name, button_text, ()=>this.ajaxcallwrapper('choosePartnerCard', {no: card_no}));
+                            dojo.addClass(button_name,'cardunicode');
+                        } 
+                        this.addActionButton( 'goAlone_button', _('Go Alone'), ()=>this.ajaxcallwrapper('goAlone'));
+                        break;
                     
                     case 'exchangeCards':
-                        this.addActionButton( 'confirmExchange_button', _('Confirm'), 'onExchangeCards')
-
+                        this.addActionButton( 'confirmExchange_button', "Confirm (0/2)", 'onExchangeCards')
+                        break;
                 }
             }
         },        
@@ -159,11 +168,11 @@ function (dojo, declare) {
             return (suit - 1) * 13 + (value - 2);
         },
 
-        playCardOnTable : function(player_id, color, value, card_id) {
+        playCardOnTable : function(player_id, suit, value, card_id) {
             // player_id => direction
             dojo.place(this.format_block('jstpl_cardontable', {
                 x : this.cardwidth * (value - 2),
-                y : this.cardheight * (color - 1),
+                y : this.cardheight * (suit - 1),
                 player_id : player_id
             }), 'playertablecard_' + player_id);
 
@@ -223,12 +232,13 @@ function (dojo, declare) {
                     this.ajaxcallwrapper('playCard', {id : items[0].id, lock : true})
                     this.playerHand.unselectAll();
                 } else if (this.checkAction('exchangeCards', true)) {
-                    // TODO: unselect first card when 3rd card selected 
+                    $('confirmExchange_button').innerHTML = `Confirm (${items.length}/2)`;
                     if (items.length > 2) {
-                        var last_selected_id = items.pop().id;
-                        this.playerHand.unselectAll();
-                        this.playerHand.selectItem(last_selected_id);
-                    }     
+                        dojo.addClass('confirmExchange_button', 'disabled');
+                    } 
+                    else {
+                        dojo.removeClass('confirmExchange_button', 'disabled');
+                    }  
                 } else {
                     this.playerHand.unselectAll();
                 }
@@ -263,7 +273,6 @@ function (dojo, declare) {
         },  
         
         notif_newHand : function(notif) {
-            console.log( 'notif_newHand' );
             // We received a new full hand
             this.playerHand.removeAll();
 
@@ -276,7 +285,6 @@ function (dojo, declare) {
         },
 
         notif_playCard : function(notif) {
-            console.log( 'notif_playCard' );
             // Play a card on the table
             this.playCardOnTable(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id);
         },

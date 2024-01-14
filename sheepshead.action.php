@@ -63,10 +63,10 @@
         self::ajaxResponse();
     }
 
-    function pickPartnerCard() {
+    function choosePartnerCard() {
         self::setAjaxMode();
-        $card_id = self::getArg("id", AT_posint, true);
-        $this->game->pickPartnerCard($card_id);
+        $card_no = self::getArg("no", AT_posint, true);
+        $this->game->choosePartnerCard($card_no);
         self::ajaxResponse();
     }
 
