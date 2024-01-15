@@ -30,6 +30,7 @@ class Sheepshead extends Table
             "picker" => 11,
             "partner" => 12, 
             "partnerCard" => 14,
+            "defaultPartnerCard" => 18,
             "trickSuit" => 10,
             "bids" => 16,
             "hands" => 17
@@ -99,6 +100,7 @@ class Sheepshead extends Table
         self::setGameStateInitialValue( 'partner', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         self::setGameStateInitialValue( 'partnerCard', 48);
+        self::setGameStateInitialValue( 'defaultPartnerCard', 48);
         // Set the dealer player (BGA makes random start player, will make that first player in startHand below)
         self::setGameStateInitialValue( 'dealer', 0);
         // Set the number of hands
@@ -144,6 +146,15 @@ class Sheepshead extends Table
         // Cards played on the table
         $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
 
+        // Current trick suit
+        $suit = self::getGameStateValue('trickSuit');
+        $result['suit_uni'] = $this->suit[$suit]['uni'];
+
+        // Partner Card Unicode        
+        $partner_card_no = self::getGameStateValue('partnerCard');   
+        $partner_card = $this->getCardFromNo($partner_card_no);
+        $result['partner_card_uni'] = $this->cardUnicode[$partner_card['type']][$partner_card['type_arg']];
+
         return $result;
     }
 
@@ -170,6 +181,12 @@ class Sheepshead extends Table
 ////////////
 
     function getCardFromNo($card_no) {
+        if ($card_no == 0) {
+            return array(
+                'type' => 0,
+                'type_arg' => 0,
+            );
+        }
         return array(
             'type' => intdiv($card_no, 13) + 1,
             'type_arg' => ($card_no % 13) + 2,
@@ -405,7 +422,16 @@ class Sheepshead extends Table
         }
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         if (self::getGameStateValue('trickSuit') == 0) {
-            self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
+            $new_suit = $this->getCardSuit($currentCard);
+            self::setGameStateValue('trickSuit', $new_suit);
+            self::notifyAllPlayers(
+                'newTrick',
+                '',
+                array(
+                    'suit' => $new_suit,
+                    'suit_uni' => $this->suit[$new_suit]['uni']
+                ) 
+            );
         }
         // TODO: remove from game log
         self::notifyAllPlayers(
@@ -470,7 +496,10 @@ class Sheepshead extends Table
         self::setGameStateValue( 'picker', 0 );
         self::setGameStateValue( 'partner', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
-        self::setGameStateValue( 'partnerCard', 48);
+        $partner_card_no = self::getGameStateValue('defaultPartnerCard');
+        self::setGameStateValue('partnerCard', $partner_card_no);        
+        $partner_card = $this->getCardFromNo($partner_card_no);
+        $partner_card_uni = $this->cardUnicode[$partner_card['type']][$partner_card['type_arg']];
         // set the start player
         $dealer_id = self::getGameStateValue('dealer');
         if ($dealer_id == 0) {
@@ -491,7 +520,16 @@ class Sheepshead extends Table
         foreach ( $players as $player_id => $player ) {
             $cards = $this->cards->pickCards(6, 'deck', $player_id);
             // Notify player about his cards
-            self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
+            self::notifyPlayer(
+                $player_id, 
+                'newHand', 
+                '', 
+                array(
+                    'cards' => $cards,
+                    'partner_card' => $partner_card,
+                    'partner_card_uni' => $partner_card_uni,
+                )
+            );
         }        
         self::notifyAllPlayers( 
             'message',

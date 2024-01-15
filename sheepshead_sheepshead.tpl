@@ -12,6 +12,18 @@
     </div>
     <!-- END playerhandblock -->
 
+    <div class="playertable playertable_N">
+        <div>
+            Partner Card<br>
+            <span id="partnerCard_span" class="cardunicode"> </span>
+        </div>
+        <br>
+        <div>
+            Current Trick Suit<br>
+            <span id="trickSuit_span" class="cardunicode"> </span>
+        </div>
+    </div>
+
 </div>
 
 <div id="myhand_wrap" class="whiteblock">

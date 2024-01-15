@@ -49,7 +49,6 @@ function (dojo, declare) {
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
-
             this.playerHand.image_items_per_row = 13; // 13 images per row
             
             // Create cards types:
@@ -77,6 +76,9 @@ function (dojo, declare) {
                 var player_id = card.location_arg;
                 this.playCardOnTable(player_id, suit, value, card.id);
             }
+            // Trick suit and partner card
+            $("partnerCard_span").innerHTML = this.gamedatas.partner_card_uni;
+            $("trickSuit_span").innerHTML = this.gamedatas.suit_uni;
             
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -265,6 +267,7 @@ function (dojo, declare) {
             dojo.subscribe('newHand', this, "notif_newHand");
             dojo.subscribe('playCard', this, "notif_playCard");
             dojo.subscribe('trickWin', this, "notif_trickWin" );
+            dojo.subscribe('newTrick', this, "notif_newTrick");
             dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer" );
             dojo.subscribe('newScores', this, "notif_newScores" );
  
@@ -275,7 +278,8 @@ function (dojo, declare) {
         notif_newHand : function(notif) {
             // We received a new full hand
             this.playerHand.removeAll();
-
+            $("partnerCard_span").innerHTML = notif.args.partner_card_uni;
+            $("trickSuit_span").innerHTML = " ";
             for ( var i in notif.args.cards) {
                 var card = notif.args.cards[i];
                 var suit = card.type;
@@ -290,7 +294,11 @@ function (dojo, declare) {
         },
 
         notif_trickWin : function(notif) {
-            // We do nothing here (just wait in order players can view the 4 cards played before they're gone.
+            $("trickSuit_span").innerHTML = " ";
+        },
+
+        notif_newTrick : function(notif) {
+            $("trickSuit_span").innerHTML = notif.args.suit_uni;
         },
 
         notif_giveAllCardsToPlayer : function(notif) {
