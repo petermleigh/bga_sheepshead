@@ -146,9 +146,10 @@ function (dojo, declare) {
                     case 'choosePartnerCard':
                         for (let i = 0; i < args.length; i++) {
                             let card_no = args[i]['card_no'];
+                            let card_str = args[i]['card_str'];
                             let button_name = `${card_no}Partner_button`;
-                            let button_text = _(`${args[i]['card_str']}`);
-                            this.addActionButton(button_name, button_text, ()=>this.ajaxcallwrapper('choosePartnerCard', {no: card_no}));
+                            let button_text = _(`${card_str}`);
+                            this.addActionButton(button_name, button_text, ()=>this.ajaxcallwrapper('choosePartnerCard', {no: card_no, lock: true}));
                         } 
                         this.addActionButton( 'goAlone_button', _('Go Alone'), ()=>this.ajaxcallwrapper('goAlone'));
                         break;

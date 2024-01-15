@@ -81,11 +81,11 @@ class Sheepshead extends Table
         
         // Create cards
         $cards = array ();
-        foreach ( $this->suit as $suit_id => $suit ) {
+        for ($suit = 1; $suit <= 4; $suit ++) {
             // spade, heart, diamond, club
             for ($value = 7; $value <= 14; $value ++) {
                 //  7, 8, 9, 10, J, Q, K, A
-                $cards [] = array ('type' => $suit_id,'type_arg' => $value,'nbr' => 1 );
+                $cards [] = array ('type' => $suit,'type_arg' => $value,'nbr' => 1 );
             }
         }
         $this->cards->createCards( $cards, 'deck' );
