@@ -20,18 +20,36 @@
  */
 
 $this->suit = array(
-  1 => array( 'name' => clienttranslate('spade'),
-              'nametr' => self::_('spade') ),
-  2 => array( 'name' => clienttranslate('heart'),
-              'nametr' => self::_('heart') ),
-  3 => array( 'name' => clienttranslate('club'),
-              'nametr' => self::_('club') ),
-  4 => array( 'name' => clienttranslate('diamond'),
-              'nametr' => self::_('diamond') )
+  0 => array(
+    'name' => clienttranslate('none'),
+    'nametr' => self::_('none'),
+    'uni' => ' '
+  ),
+  1 => array(
+    'name' => clienttranslate('spade'),
+    'nametr' => self::_('spade'),
+    'uni' => '♠'
+  ),
+  2 => array( 
+    'name' => clienttranslate('heart'),
+    'nametr' => self::_('heart'),
+    'uni' => '♡'
+  ),
+  3 => array(
+    'name' => clienttranslate('club'),
+    'nametr' => self::_('club'),
+    'uni' => '♣'
+  ),
+  4 => array(
+    'name' => clienttranslate('diamond'),
+    'nametr' => self::_('diamond'),
+    'uni' => '♢'
+  )
 );
 
 $this->rank = array(
-  2 =>'2',
+  0 => '',
+  2 => '2',
   3 => '3',
   4 => '4',
   5 => '5',
@@ -52,49 +70,6 @@ $this->points = array(
   12 => 3,
   13 => 4,
   14 => 11
-);
-
-$this->cardUnicode = array(
-  1 => array(  // spades
-    7 => "🂧",
-    8 => "🂨",
-    9 => "🂩",
-    10 => "🂪",
-    11 => "🂫",
-    12 => "🂭",
-    13 => "🂮",
-    14 => "🂡",
-  ),
-  2 => array(  // hearts
-    7 => "🂷",
-    8 => "🂸",
-    9 => "🂹",
-    10 => "🂺",
-    11 => "🂻",
-    12 => "🂽",
-    13 => "🂾",
-    14 => "🂱",
-  ),
-  3 => array(  // clubs
-    7 => "🃗",
-    8 => "🃘",
-    9 => "🃙",
-    10 => "🃚",
-    11 => "🃛",
-    12 => "🃝",
-    13 => "🃞",
-    14 => "🃑",
-  ),
-  4 => array(  // diamonds
-    7 => "🃇",
-    8 => "🃈",
-    9 => "🃉",
-    10 => "🃊",
-    11 => "🃋",
-    12 => "🃍",
-    13 => "🃎",
-    14 => "🃁",
-  ),
 );
 
 $this->cardPower = array(

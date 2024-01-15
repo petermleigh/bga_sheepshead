@@ -144,6 +144,10 @@ class Sheepshead extends Table
         // Cards played on the table
         $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
 
+        // Partner Card
+        $partner_card_str = $this->getCardStr($this->getCardFromNo(self::getGameStateValue('partnerCard')));
+        $result['partnercardstr'] = $partner_card_str;
+
         return $result;
     }
 
@@ -178,6 +182,10 @@ class Sheepshead extends Table
 
     function getNofromCard($card) {
         return ($card['type'] - 1) * 13 + ($card['type_arg'] - 2);
+    }
+
+    function getCardStr($card) {
+        return $this->rank[$card['type_arg']] . $this->suit[$card['type']]['uni'];
     }
 
     function isTrump($card) {
@@ -377,7 +385,18 @@ class Sheepshead extends Table
     }
 
     function choosePartnerCard($card_no) {
-        self::checkAction("choosePartnerCard");
+        self::checkAction("choosePartnerCard");              
+        $partner_card_str = $this->getCardStr($this->getCardFromNo($card_no));
+        $player_id = self::getActivePlayerId();
+        self::notifyAllPlayers(
+            'partnerCardChosen', 
+            clienttranslate('${player_name} chose ${partner_card_str}'), 
+            array (
+                'player_id' => $player_id,
+                'player_name' => self::getActivePlayerName(),
+                'partner_card_str' => $partner_card_str,
+            )
+        );
         if ($card_no == 0) {
             $this->gamestate->nextState('goAlone');
         }
@@ -410,7 +429,7 @@ class Sheepshead extends Table
         // TODO: remove from game log
         self::notifyAllPlayers(
             'playCard', 
-            clienttranslate('${player_name} plays ${card_uni}'), 
+            clienttranslate('${player_name} plays ${card_str}'), 
             array (
                 'i18n' => array('card_uni'),
                 'card_id' => $card_id,
@@ -418,7 +437,7 @@ class Sheepshead extends Table
                 'player_name' => self::getActivePlayerName(),
                 'value' => $currentCard['type_arg'],
                 'suit' => $currentCard['type'], 
-                'card_uni' => $this->cardUnicode[$currentCard['type']][$currentCard['type_arg']]
+                'card_str' => $this->getCardStr($currentCard),
             )
         );
         // Next player
@@ -440,15 +459,15 @@ class Sheepshead extends Table
         $available_jacks = array(
             1 => array(
                 'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => 11)), 
-                'card_uni' => $this->cardUnicode[1][11]
+                'card_str' => $this->getCardStr(array('type' => 1, 'type_arg' => 11)) 
             ),
             2 => array(
                 'card_no' => $this->getNofromCard(array('type' => 2, 'type_arg' => 11)), 
-                'card_uni' => $this->cardUnicode[2][11]
+                'card_str' => $this->getCardStr(array('type' => 2, 'type_arg' => 11)) 
             ),  
             3 => array(
                 'card_no' => $this->getNofromCard(array('type' => 3, 'type_arg' => 11)), 
-                'card_uni' => $this->cardUnicode[3][11]
+                'card_str' => $this->getCardStr(array('type' => 3, 'type_arg' => 11))
             ),  
         );
         $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $player_id );

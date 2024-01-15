@@ -77,7 +77,9 @@ function (dojo, declare) {
                 var player_id = card.location_arg;
                 this.playCardOnTable(player_id, suit, value, card.id);
             }
-            
+
+            $("player_card_span").innerHTML = this.gamedatas.partnercardstr;
+
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
             // Setup game notifications to handle (see "setupNotifications" method below)
@@ -144,11 +146,9 @@ function (dojo, declare) {
                     case 'choosePartnerCard':
                         for (let i = 0; i < args.length; i++) {
                             let card_no = args[i]['card_no'];
-                            let card_uni = args[i]['card_uni'];
                             let button_name = `${card_no}Partner_button`;
-                            let button_text = _(`${card_uni}`);
+                            let button_text = _(`${args[i]['card_str']}`);
                             this.addActionButton(button_name, button_text, ()=>this.ajaxcallwrapper('choosePartnerCard', {no: card_no}));
-                            dojo.addClass(button_name,'cardunicode');
                         } 
                         this.addActionButton( 'goAlone_button', _('Go Alone'), ()=>this.ajaxcallwrapper('goAlone'));
                         break;
@@ -263,6 +263,7 @@ function (dojo, declare) {
             console.log( 'notifications subscriptions setup' );
             
             dojo.subscribe('newHand', this, "notif_newHand");
+            dojo.subscribe('partnerCardChosen', this, "notif_partnerCardChosen");
             dojo.subscribe('playCard', this, "notif_playCard");
             dojo.subscribe('trickWin', this, "notif_trickWin" );
             dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer" );
@@ -282,6 +283,11 @@ function (dojo, declare) {
                 var value = card.type_arg;
                 this.playerHand.addToStockWithId(this.getCardTypeId(suit, value), card.id);
             }
+        },
+
+        notif_partnerCardChosen : function(notif) {
+            // Update partner card
+            $("player_card_span").innerHTML = notif.args.partner_card_str;
         },
 
         notif_playCard : function(notif) {

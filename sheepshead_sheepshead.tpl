@@ -11,6 +11,17 @@
         </div>
     </div>
     <!-- END playerhandblock -->
+    <div class="playertable playertable_N">
+        <div>
+            Partner Card<br>
+            <span id="player_card_span"></span>
+        </div>
+        <br>
+        <div>
+            Current Trick Suit<br>
+            <span id="current_trick_span"></span>
+        </div>
+    </div>
 
 </div>
 
