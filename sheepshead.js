@@ -156,9 +156,8 @@ function (dojo, declare) {
                     case 'choosePartnerCard':
                         for (let i = 0; i < args.length; i++) {
                             let card_no = args[i]['card_no'];
-                            let card_str = args[i]['card_str'];
-                            let button_name = `${card_no}Partner_button`;
-                            let button_text = _(`${card_str}`);
+                            let button_name = card_no + 'Partner_button';
+                            let button_text = args[i]['card_str'];
                             this.addActionButton(button_name, button_text, ()=>this.ajaxcallwrapper('choosePartnerCard', {no: card_no, lock: true}));
                         } 
                         this.addActionButton( 'goAlone_button', _('Go Alone'), ()=>this.ajaxcallwrapper('goAlone'));
@@ -277,7 +276,7 @@ function (dojo, declare) {
                     this.ajaxcallwrapper('playCard', {id : items[0].id, lock : true})
                     this.playerHand.unselectAll();
                 } else if (this.checkAction('exchangeCards', true)) {
-                    $('confirmExchange_button').innerHTML = `Confirm (${items.length}/2)`;
+                    $('confirmExchange_button').innerHTML = 'Confirm (' + items.length + '/2)';
                     if (items.length > 2) {
                         dojo.addClass('confirmExchange_button', 'disabled');
                     } 

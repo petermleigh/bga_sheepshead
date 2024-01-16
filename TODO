@@ -1,12 +1,13 @@
 bugs:
+    check stats at end of game
+    game option not working
 
 features to add before alpha:
+    token tooltips
     cheat sheet dialog
     sort cards
 checklist:
     https://en.doc.boardgamearena.com/Pre-release_checklist
-    stats
-    game progression
     box art
     game metadata
 

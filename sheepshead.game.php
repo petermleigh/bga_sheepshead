@@ -449,7 +449,7 @@ class Sheepshead extends Table
         $currentCard = $this->cards->getCard($card_id);
         if ( ! $this->isCardPlayable($currentCard, $player_id)) {
             $this->gamestate->nextState('unplayable');
-            throw new BgaUserException ( "Card not in suit" );
+            throw new BgaUserException(clienttranslate("Card not in suit"));
         }
         $this->cards->moveCard($card_id, 'cardsontable', $player_id);
         if (self::getGameStateValue('trickSuit') == 0) {
@@ -636,7 +636,7 @@ class Sheepshead extends Table
         self::notifyPlayer(
             $partner_id, 
             'message', 
-            'You are the Partner for this hand',
+            clienttranslate('You are the Partner for this hand'),
             array(
                 'player_id' => $partner_id,
             )

@@ -54,23 +54,23 @@
         },
         "totalPointsEarned": {
             "id": 30,
-            "name": "Average points taken per hand",
+            "name": "Total points taken",
             "type": "int"
         },
         "totalTricksTaken": {
             "id": 31,
-            "name": "Average tricks taken per hand",
+            "name": "Total tricks taken",
             "type": "int"
         },
         "totalNumberOfQueens": {
             "id": 32,
-            "name": "Average number of queens per hand",
+            "name": "Total number of queens per hand",
             "type": "int",
             "display": "limited"
         },
         "totalNumberOfTrump": {
             "id": 33,
-            "name": "Average number of trump cards per hand",
+            "name": "Total number of trump cards per hand",
             "type": "int",
             "display": "limited"
         }
