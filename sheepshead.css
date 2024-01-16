@@ -71,14 +71,16 @@
     height: 96px;
 }
 
-.tokenstash {
-    display: none;
-}
-
 #playertables {
     position: relative;
     width: 710px;
     height: 340px;
+    margin: 0 auto;
+}
+#myhand {
+    position: relative;
+    width: 710px;
+    margin: 0 auto;
 }
 
 .playertablename {
