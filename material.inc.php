@@ -18,33 +18,50 @@
  * are available everywhere in your game logic code.
  *
  */
+$this->token = array(
+  'dealer' => array(
+    'name' => clienttranslate('dealer'),
+    'nametr' => self::_('dealer'),
+    'token_id' => 2,
+  ),
+  'picker' => array(
+    'name' => clienttranslate('picker'),
+    'nametr' => self::_('picker'),
+    'token_id' => 8,
+  ),
+  'revealedPartner' => array(
+    'name' => clienttranslate('partner'),
+    'nametr' => self::_('partner'),
+    'token_id' => 7,
+  ),
+);
 
 $this->suit = array(
   0 => array(
     'name' => clienttranslate('none'),
     'nametr' => self::_('none'),
-    'uni' => ' '
+    'uni' => ' ',
   ),
   1 => array(
     'name' => clienttranslate('spade'),
     'nametr' => self::_('spade'),
-    'uni' => '♠'
+    'uni' => '♠',
   ),
   2 => array( 
     'name' => clienttranslate('heart'),
     'nametr' => self::_('heart'),
-    'uni' => '♡'
+    'uni' => '♡',
   ),
   3 => array(
     'name' => clienttranslate('club'),
     'nametr' => self::_('club'),
-    'uni' => '♣'
+    'uni' => '♣',
   ),
   4 => array(
     'name' => clienttranslate('diamond'),
     'nametr' => self::_('diamond'),
-    'uni' => '♢'
-  )
+    'uni' => '♢',
+  ),
 );
 
 $this->rank = array(
@@ -61,7 +78,7 @@ $this->rank = array(
   11 => clienttranslate('J'),
   12 => clienttranslate('Q'),
   13 => clienttranslate('K'),
-  14 => clienttranslate('A')
+  14 => clienttranslate('A'),
 );
 
 $this->points = array(
@@ -69,7 +86,7 @@ $this->points = array(
   11 => 2,
   12 => 3,
   13 => 4,
-  14 => 11
+  14 => 11,
 );
 
 $this->cardPower = array(

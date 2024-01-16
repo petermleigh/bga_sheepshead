@@ -43,16 +43,21 @@ class view_sheepshead_sheepshead extends game_view
         /*********** Place your code below:  ************/
         $template = self::getGameName() . "_" . self::getGameName();
         
-        $directions = array('S', 'SE', 'NE', 'NW', 'SW');
+        $directions = array('S', 'SW', 'NW', 'NE', 'SE');
         
         // this will inflate our player block with actual players data
         $this->page->begin_block($template, "playerhandblock");
         foreach ( $players as $player_id => $info ) {
             $dir = array_shift($directions);
-            $this->page->insert_block("playerhandblock", array ("PLAYER_ID" => $player_id,
-                    "PLAYER_NAME" => $players [$player_id] ['player_name'],
-                    "PLAYER_COLOR" => $players [$player_id] ['player_color'],
-                    "DIR" => $dir ));
+            $this->page->insert_block(
+                "playerhandblock", 
+                array(
+                    "PLAYER_ID" => $player_id,
+                    "PLAYER_NAME" => $info['player_name'],
+                    "PLAYER_COLOR" => $info['player_color'],
+                    "DIR" => $dir 
+                )
+            );
         }
         // this will make our My Hand text translatable
         $this->tpl['MY_HAND'] = self::_("My hand");

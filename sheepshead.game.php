@@ -32,7 +32,11 @@ class Sheepshead extends Table
             "partnerCard" => 14,
             "trickSuit" => 10,
             "bids" => 16,
-            "hands" => 17
+            "hands" => 17,
+            "defaultPartnerCard" => 18,
+            "revealedPartner" => 19,
+            // Game Variants
+            "gameRounds" => 110,
             ) 
         );
 
@@ -97,22 +101,31 @@ class Sheepshead extends Table
         // Set picker and partner to zero (= no picker / partner player number)
         self::setGameStateInitialValue( 'picker', 0 );
         self::setGameStateInitialValue( 'partner', 0 );
+        self::setGameStateInitialValue( 'revealedPartner', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
+        self::setGameStateInitialValue( 'defaultPartnerCard', 48);
         self::setGameStateInitialValue( 'partnerCard', 48);
         // Set the dealer player (BGA makes random start player, will make that first player in startHand below)
         self::setGameStateInitialValue( 'dealer', 0);
         // Set the number of hands
         self::setGameStateInitialValue( 'hands', 0);
-
-        // TODO: Init game statistics
-        // (note: statistics used in this file must be defined in your stats.inc.php file)
-        // self::initStat( 'table', 'table_handsPlayed', 0 );     
-        // self::initStat( 'player', 'player_pointsEarned', 0 );
-        // self::initStat( 'player', 'player_tricksTaken', 0 ); 
-        // self::initStat( 'player', 'player_handsWon', 0 );    
-        // self::initStat( 'player', 'player_numPick', 0 );     
-        // self::initStat( 'player', 'player_numPartner', 0 );  
-        // self::initStat( 'player', 'player_numStuckPick', 0 );
+        //TODO: read this in from game options
+        self::setGameStateInitialValue( 'gameRounds', 1);
+        // Initialize stats
+        self::initStat( 'table', 'handsPlayed', 0 );     
+        self::initStat( 'player', 'averagePointsEarned', 0.0 ); 
+        self::initStat( 'player', 'averageTricksTaken', 0.0 );    
+        self::initStat( 'player', 'averageNumberOfQueens', 0.0 );     
+        self::initStat( 'player', 'averageNumberOfTrump', 0.0 );  
+        self::initStat( 'player', 'totalHandsWon', 0 );
+        self::initStat( 'player', 'numPick', 0 );
+        self::initStat( 'player', 'numPartner', 0 );
+        self::initStat( 'player', 'numStuckPick', 0 );
+        self::initStat( 'player', 'numLoner', 0 );
+        self::initStat( 'player', 'totalPointsEarned', 0 );
+        self::initStat( 'player', 'totalTricksTaken', 0 );
+        self::initStat( 'player', 'totalNumberOfQueens', 0 );
+        self::initStat( 'player', 'totalNumberOfTrump', 0 );
 
         $this->activeNextPlayer();
     }
@@ -131,6 +144,8 @@ class Sheepshead extends Table
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();
+        $partner_card_str = $this->getCardStr($this->getCardFromNo(self::getGameStateValue('partnerCard')));
+        $trick_suit_str = $this->suit[self::getGameStateValue('trickSuit')]['uni'];
     
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
@@ -145,8 +160,27 @@ class Sheepshead extends Table
         $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
 
         // Partner Card
-        $partner_card_str = $this->getCardStr($this->getCardFromNo(self::getGameStateValue('partnerCard')));
         $result['partnercardstr'] = $partner_card_str;
+
+        // Current trick suit
+        $result['tricksuitstr'] = $trick_suit_str;
+
+        // Player tokens
+        $result['playertokens'] = array(
+            array(
+                'player_id' => self::getGameStateValue('dealer'),
+                'token_id' => $this->token['dealer']['token_id'],
+            ),
+            array(
+                'player_id' => self::getGameStateValue('picker'),
+                'token_id' => $this->token['picker']['token_id'],
+            ),
+            array(
+                'player_id' => self::getGameStateValue('revealedPartner'),
+                'token_id' => $this->token['revealedPartner']['token_id'],
+            ),
+        );
+
 
         return $result;
     }
@@ -163,9 +197,10 @@ class Sheepshead extends Table
     */
     function getGameProgression()
     {
-        // TODO: compute and return the game progression
-
-        return 0;
+        $num_rounds = self::getGameStateValue('gameRounds');
+        $num_hands = self::getGameStateValue('hands');
+        $num_players = self::getPlayersNumber();
+        return ($num_hands / ($num_rounds * $num_players)) * 100;
     }
 
 
@@ -193,8 +228,9 @@ class Sheepshead extends Table
     }
 
     function isEndOfGame($num_hands) {
-        // end game after 3 rounds
-        return ($num_hands >= 15);
+        $num_rounds = self::getGameStateValue('gameRounds');
+        $num_players = self::getPlayersNumber();
+        return ($num_hands >= $num_rounds * $num_players);
     }
     
     function getPartnerId() {
@@ -347,16 +383,9 @@ class Sheepshead extends Table
 
     function pick() {
         self::checkAction("pick");
-        $player_id = self::getActivePlayerId();
-        self::notifyAllPlayers(
-            'playerPicked', 
-            clienttranslate('${player_name} picked'), 
-            array (
-                'player_id' => $player_id,
-                'player_name' => self::getActivePlayerName(),
-            )
-        );
-        self::setGameStateValue('picker', $player_id);
+        // set the picker
+        $picker_id = self::getActivePlayerId();
+        self::setGameStateValue('picker', $picker_id);
         $this->gamestate->nextState('pick');
     }
 
@@ -429,8 +458,8 @@ class Sheepshead extends Table
         // TODO: remove from game log
         self::notifyAllPlayers(
             'playCard', 
-            clienttranslate('${player_name} plays ${card_str}'), 
-            array (
+            '', 
+            array(
                 'i18n' => array('card_uni'),
                 'card_id' => $card_id,
                 'player_id' => $player_id,
@@ -438,8 +467,22 @@ class Sheepshead extends Table
                 'value' => $currentCard['type_arg'],
                 'suit' => $currentCard['type'], 
                 'card_str' => $this->getCardStr($currentCard),
+                'trick_suit_str' => $this->suit[self::getGameStateValue('trickSuit')]['uni'],
             )
         );
+        if ($this->getNofromCard($currentCard) == self::getGameStateValue('partnerCard')){
+            self::setGameStateValue('revealedPartner', $player_id);
+            self::notifyAllPlayers( 
+                'moveTokens',
+                '', 
+                array(
+                    'tokens' => array(
+                        array('token_id' => $this->token['revealedPartner']['token_id'], 'player_id' => $player_id),    
+                    )
+                ) 
+            );  
+
+        }
         // Next player
         $this->gamestate->nextState('playCard');
     }
@@ -488,17 +531,19 @@ class Sheepshead extends Table
         // Set picker and partner to zero (= no picker / partner player number)
         self::setGameStateValue( 'picker', 0 );
         self::setGameStateValue( 'partner', 0 );
+        self::setGameStateValue('revealedPartner', 0);
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
-        self::setGameStateValue( 'partnerCard', 48);
+        $partner_card = self::getGameStateValue('defaultPartnerCard');
+        self::setGameStateValue( 'partnerCard', $partner_card);
         // set the start player
         $dealer_id = self::getGameStateValue('dealer');
         if ($dealer_id == 0) {
             $dealer_id = self::getActivePlayerId();
         }
         else {
-            $dealer_id = self::getPlayerAfter( $dealer_id );
+            $dealer_id = self::getPlayerAfter($dealer_id);
         }
-        self::setGameStateValue( 'dealer', $dealer_id);
+        self::setGameStateValue('dealer', $dealer_id);
         // start to the left of the dealer
         $this->gamestate->changeActivePlayer(self::getPlayerAfter($dealer_id));
 
@@ -513,11 +558,15 @@ class Sheepshead extends Table
             self::notifyPlayer($player_id, 'newHand', '', array ('cards' => $cards ));
         }        
         self::notifyAllPlayers( 
-            'message',
-            clienttranslate('${player_name} is the dealer'), 
+            'moveTokens',
+            '', 
             array(
-                'player_id' => $dealer_id,
-                'player_name' => $players[ $dealer_id ]['player_name']
+                'tokens' => array(
+                    array('token_id' => $this->token['dealer']['token_id'], 'player_id' => $dealer_id),
+                    array('token_id' => $this->token['picker']['token_id'], 'player_id' => 0),
+                    array('token_id' => $this->token['revealedPartner']['token_id'], 'player_id' => 0),
+
+                )
             ) 
         );    
         $this->gamestate->nextState("");
@@ -529,7 +578,7 @@ class Sheepshead extends Table
         // player picked, give them the blind
         $blind_cards = $this->cards->pickCards(2, 'deck', $current_player_id);
         // get all cards in player hand
-        $cards = $this->cards->getCardsInLocation( 'hand', $current_player_id );
+        $cards = $this->cards->getCardsInLocation('hand', $current_player_id);
         self::notifyPlayer($current_player_id, 'newHand', '', array ('cards' => $cards ));
         foreach ($cards as $card) {
             $card_no = $this->getNofromCard($card);
@@ -548,14 +597,16 @@ class Sheepshead extends Table
 
     function stSetStuckBid() {
         // placeholder for special stuck rules 
-        $player_id = self::getActivePlayerId();
-        $players = self::loadPlayersBasicInfos();             
+        // set the picker
+        $picker_id = self::getActivePlayerId();        
+        self::setGameStateValue('picker', $picker_id);   
+        $players = self::loadPlayersBasicInfos();         
         self::notifyAllPlayers( 
             'message',
             clienttranslate('${player_name} is stuck and must pick'), 
             array(
-                'player_id' => $player_id,
-                'player_name' => $players[$player_id]['player_name']
+                'player_id' => $picker_id,
+                'player_name' => $players[$picker_id]['player_name']
             ) 
         );
         $this->gamestate->nextState("");
@@ -574,10 +625,9 @@ class Sheepshead extends Table
 
     function stUpdateBid() {
         $dealer_id = self::getGameStateValue('dealer');
-        // set the picker and partner
-        $picker_id = self::getActivePlayerId();
+        $picker_id = self::getGameStateValue('picker');
+        // determine the partner        
         $partner_id = $this->getPartnerId();
-        self::setGameStateValue('picker', $picker_id);
         self::setGameStateValue('partner', $partner_id);
         // start to the left of the dealer
         $leader_id = self::getPlayerAfter($dealer_id);
@@ -591,16 +641,43 @@ class Sheepshead extends Table
                 'player_id' => $partner_id,
             )
         );
-        # Notify all players who will start the hand
-        $players = self::loadPlayersBasicInfos();
         self::notifyAllPlayers( 
-            'message',
-            clienttranslate('${player_name} will lead first'), 
+            'moveTokens',
+            '', 
             array(
-                'player_id' => $leader_id,
-                'player_name' => $players[ $leader_id ]['player_name']
+                'tokens' => array(
+                    array('token_id' => $this->token['picker']['token_id'], 'player_id' => $picker_id),
+                )
             ) 
-        );
+        );   
+        $players = self::loadPlayersBasicInfos();
+        foreach ($players as $player_id => $player) {
+            $num_queens = 0;
+            $num_trump = 0;
+            foreach ($this->cards->getCardsInLocation( 'hand', $player_id ) as $card) {
+                if ($this->isTrump($card)) {
+                    $num_trump += 1;
+                }
+                if ($card['type_arg'] == 12){
+                    $num_queens += 1;
+                }
+            }
+            self::incStat($num_queens, 'averageNumberOfQueens', $player_id);     
+            self::incStat($num_trump, 'averageNumberOfTrump', $player_id); 
+            if ($player_id == $picker_id) {
+                self::incStat(1, 'numPick', $player_id);
+                if ($player_id == $dealer_id) {
+                    self::incStat(1, 'numStuckPick', $player_id);
+                }
+                if ($player_id == $partner_id) {
+                    self::incStat(1, 'numLoner', $player_id);
+                }
+            }
+            else if ($player_id == $partner_id) {
+                self::incStat(1, 'numPartner', $player_id);
+            }
+        }
+
         $this->gamestate->nextState("");
     }
 
@@ -729,6 +806,36 @@ class Sheepshead extends Table
             self::setGameStateValue('hands', $num_hands);
             $this->gamestate->nextState("nextHand");
         }
+        
+        self::incStat(1, 'handsPlayed');   
+        foreach ($players as $player_id => $player) {
+            $num_players = self::getPlayersNumber();
+            $cards_taken = 0;      
+            $cards = $this->cards->getCardsInLocation("cardswon");
+            foreach ( $cards as $card ) {
+                if ($card ['location_arg'] == $player_id) {
+                    $cards_taken += 1;
+                }
+            }
+            $tricks_taken = intdiv($cards_taken, $num_players);
+            self::incStat($player_hand_points[$player_id], 'totalPointsEarned', $player_id);
+            self::incStat($tricks_taken, 'totalTricksTaken', $player_id);
+            if ($winning_team == "Picking" && ($player_id == $picker_id || $player_id == $partner_id)) {
+                self::incStat(1, 'totalHandsWon', $player_id);
+            }
+            if ($winning_team != "Picking" && $player_id != $picker_id && $player_id != $partner_id) {
+                self::incStat(1, 'totalHandsWon', $player_id);
+            }
+            
+            $num_hands = self::getStat('handsPlayed');
+            $num_queens = self::getStat('totalNumberOfQueens', $player_id);
+            $num_trump = self::getStat('totalNumberOfTrump', $player_id);
+            
+            self::setStat($player_hand_points[$player_id] / $num_hands, 'averagePointsEarned', $player_id); 
+            self::setStat($tricks_taken / $num_hands, 'averageTricksTaken', $player_id);    
+            self::setStat($num_queens / $num_hands, 'averageNumberOfQueens', $player_id);     
+            self::setStat($num_trump / $num_hands, 'averageNumberOfTrump', $player_id); 
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -747,29 +854,49 @@ class Sheepshead extends Table
         As a consequence, there is no current player associated to this action. In your zombieTurn function,
         you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message. 
     */
-
+    function getZombieCard($cards, $active_player) {
+        foreach ($cards as $card){
+            if ($this->isCardPlayable($card, $active_player)) {
+                return $card;
+            }
+        }
+        // should never reach this...
+        return $cards[0];
+    }
+    
     function zombieTurn( $state, $active_player )
     {
     	$statename = $state['name'];
     	
+        $cards = $this->cards->getCardsInLocation('hand', $active_player);
+
+
         if ($state['type'] === "activeplayer") {
             switch ($statename) {
-                default:
-                    $this->gamestate->nextState( "zombiePass" );
+                //Zombie will always pass unless forced to pick
+                case "bid":
+                    $this->gamestate->nextState( "pass" );
                 	break;
+                //Zombie will always go alone
+                case "chooseLoner":
+                    $this->gamestate->nextState( "goAlone" );
+                    break;
+                case "choosePartnerCard":
+                    $this->gamestate->nextState( "goAlone" );
+                    break;
+                //Zombie will burry first 2 cards
+                case "exchangeCards":
+                    $this->exchangeCards($cards[0]['id'], $cards[1]['id']);
+                    break;
+                //Zombie will play first playable card
+                case "playerTurn":
+                    $card = $this->getZombieCard($cards, $active_player);
+                    $this->playCard($card['id']);
+                    break;
             }
 
             return;
         }
-
-        if ($state['type'] === "multipleactiveplayer") {
-            // Make sure player is in a non blocking status for role turn
-            $this->gamestate->setPlayerNonMultiactive( $active_player, '' );
-            
-            return;
-        }
-
-        throw new feException( "Zombie mode not supported at this game state: ".$statename );
     }
     
 ///////////////////////////////////////////////////////////////////////////////////:

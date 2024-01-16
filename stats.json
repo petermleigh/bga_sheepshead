@@ -1,1 +1,78 @@
-{}
+{
+    "table": {
+        "handsPlayed": {
+            "id": 10,
+            "name": "Number of hands played",
+            "type": "int"
+        }
+    },
+    "player": {
+        "averagePointsEarned": {
+            "id": 10,
+            "name": "Average points taken per hand",
+            "type": "float"
+        },
+        "averageTricksTaken": {
+            "id": 11,
+            "name": "Average tricks taken per hand",
+            "type": "float"
+        },
+        "averageNumberOfQueens": {
+            "id": 12,
+            "name": "Average number of queens per hand",
+            "type": "float"
+        },
+        "averageNumberOfTrump": {
+            "id": 13,
+            "name": "Average number of trump cards per hand",
+            "type": "float"
+        },
+        "totalHandsWon": {
+            "id": 14,
+            "name": "Total hands won",
+            "type": "int"
+        },
+        "numPick": {
+            "id": 15,
+            "name": "Number of times picked",
+            "type": "int"
+        },
+        "numPartner": {
+            "id": 16,
+            "name": "Number of times partner",
+            "type": "int"
+        },
+        "numStuckPick": {
+            "id": 17,
+            "name": "Number of times stuck picking",
+            "type": "int"
+        },
+        "numLoner": {
+            "id": 18,
+            "name": "Number of times went alone",
+            "type": "int"
+        },
+        "totalPointsEarned": {
+            "id": 30,
+            "name": "Average points taken per hand",
+            "type": "int"
+        },
+        "totalTricksTaken": {
+            "id": 31,
+            "name": "Average tricks taken per hand",
+            "type": "int"
+        },
+        "totalNumberOfQueens": {
+            "id": 32,
+            "name": "Average number of queens per hand",
+            "type": "int",
+            "display": "limited"
+        },
+        "totalNumberOfTrump": {
+            "id": 33,
+            "name": "Average number of trump cards per hand",
+            "type": "int",
+            "display": "limited"
+        }
+    }
+}

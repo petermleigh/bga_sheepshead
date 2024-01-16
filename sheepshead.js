@@ -27,6 +27,8 @@ function (dojo, declare) {
             console.log('sheepshead constructor');
             this.cardwidth = 72;
             this.cardheight = 96;
+            this.tokenwidth = 30;
+            this.tokenheight = 30;
         },
         
         /*
@@ -45,7 +47,7 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log( "Starting game setup" );
-                                
+            
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
@@ -78,7 +80,15 @@ function (dojo, declare) {
                 this.playCardOnTable(player_id, suit, value, card.id);
             }
 
+            for (i in this.gamedatas.playertokens) {
+                var token = this.gamedatas.playertokens[i];
+                var player_id = token.player_id;
+                var token_id = token.token_id;
+                this.placeToken(player_id, token_id);
+            }
+
             $("player_card_span").innerHTML = this.gamedatas.partnercardstr;
+            $("current_trick_span").innerHTML = this.gamedatas.tricksuitstr;
 
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -169,13 +179,47 @@ function (dojo, declare) {
             return (suit - 1) * 13 + (value - 2);
         },
 
+        placeToken : function(player_id, token_id) {
+            console.log('placing ' + token_id + ' on ' + player_id);
+            if (player_id == 0) {
+                // destroy unused tokens
+                dojo.destroy('playertoken_' + token_id);
+                return;
+            }
+            if (dojo.query('#playertoken_' + token_id).length > 0){
+                // destroy duplicate token
+                dojo.destroy('playertoken_' + token_id);
+            }
+            dojo.place(
+                this.format_block(
+                    'jstpl_token', 
+                    {
+                        x : this.tokenwidth * (token_id - 1),
+                        y : 0,
+                        token_id: token_id
+                    }
+                ), 
+                'playertokens_' + player_id
+            );
+            var num_tokens = dojo.query('#playertokens_' + player_id + ' .playertoken').length;
+            var height_offset = (this.tokenheight / 2) * num_tokens;
+            this.placeOnObjectPos('playertoken_' + token_id, 'playertokens_' + player_id, 0, height_offset);            
+            this.slideToObjectPos('playertoken_' + token_id, 'playertokens_' + player_id, 0, height_offset).play();
+        },
+
         playCardOnTable : function(player_id, suit, value, card_id) {
             // player_id => direction
-            dojo.place(this.format_block('jstpl_cardontable', {
-                x : this.cardwidth * (value - 2),
-                y : this.cardheight * (suit - 1),
-                player_id : player_id
-            }), 'playertablecard_' + player_id);
+            dojo.place(
+                this.format_block(
+                    'jstpl_cardontable', 
+                    {
+                        x : this.cardwidth * (value - 2),
+                        y : this.cardheight * (suit - 1),
+                        player_id : player_id
+                    }
+                ), 
+                'playertablecard_' + player_id
+            );
 
             if (player_id != this.player_id) {
                 // Some opponent played a card
@@ -263,6 +307,7 @@ function (dojo, declare) {
         {
             console.log( 'notifications subscriptions setup' );
             
+            dojo.subscribe('moveTokens', this, "notif_moveTokens");
             dojo.subscribe('newHand', this, "notif_newHand");
             dojo.subscribe('partnerCardChosen', this, "notif_partnerCardChosen");
             dojo.subscribe('playCard', this, "notif_playCard");
@@ -273,7 +318,15 @@ function (dojo, declare) {
             this.notifqueue.setSynchronous( 'trickWin', 1000 );
 
         },  
-        
+
+        notif_moveTokens : function(notif) {
+            for (var i in notif.args.tokens) {
+                var player_id = notif.args.tokens[i]['player_id'];
+                var token_id = notif.args.tokens[i]['token_id'];
+                this.placeToken(player_id, token_id);
+            }
+        },
+
         notif_newHand : function(notif) {
             // We received a new full hand
             this.playerHand.removeAll();
@@ -292,12 +345,13 @@ function (dojo, declare) {
         },
 
         notif_playCard : function(notif) {
+            $("current_trick_span").innerHTML = notif.args.trick_suit_str;
             // Play a card on the table
             this.playCardOnTable(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id);
         },
 
         notif_trickWin : function(notif) {
-            // We do nothing here (just wait in order players can view the 4 cards played before they're gone.
+            $("current_trick_span").innerHTML = "";
         },
 
         notif_giveAllCardsToPlayer : function(notif) {

@@ -41,6 +41,20 @@
      Note: on the production platform, this file will be compressed and comments will be removed.
            Consequently, don't hesitate to put as many comments as necessary.
 */
+.playertoken {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-image: url('img/tokens.png'); 
+}
+
+.playertokens{
+    display: inline-block;
+    position: relative;
+    left: -30px;
+    width: 30px;
+    height: 90px;
+}
 
 .cardontable {
     position: absolute;
@@ -52,8 +66,13 @@
 .playertablecard {
     display: inline-block;
     position: relative;
+    left: -15px;
     width: 72px;
     height: 96px;
+}
+
+.tokenstash {
+    display: none;
 }
 
 #playertables {
@@ -94,7 +113,7 @@
     margin-left: -90px;
     bottom: 0px;
 }
-.playertable_N {
+.playertable_info {
     left: 50%;
     margin-left: -90px;
     top: 0px;
