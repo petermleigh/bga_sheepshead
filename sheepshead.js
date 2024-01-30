@@ -12,7 +12,8 @@ define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
     "ebg/counter",
-    "ebg/stock"
+    "ebg/stock",
+    "ebg/expandablesection"
 ],
 function (dojo, declare) {
     return declare("bgagame.sheepshead", ebg.core.gamegui, {
@@ -25,6 +26,11 @@ function (dojo, declare) {
         
         setup: function( gamedatas )
         {         
+            // Help Expandable
+            this.expanded = new ebg.expandablesection();
+            this.expanded.create(this, "card_help");
+            this.expanded.collapse();
+
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
@@ -40,7 +46,8 @@ function (dojo, declare) {
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
-            this.playerHand.changeItemsWeight(weights) 
+            console.log(JSON.stringify(weights))
+            this.playerHand.changeItemsWeight(weights);
 
             // Cards in player's hand
             for ( var i in this.gamedatas.hand) {
@@ -64,6 +71,7 @@ function (dojo, declare) {
                 var player_id = token.player_id;
                 var token_id = token.token_id;
                 this.placeToken(player_id, token_id);
+                this.addTooltip('playertoken_' + token_id, token.token_name, '' );
             }
 
             $("player_card_span").innerHTML = this.gamedatas.partnercardstr;
@@ -323,7 +331,9 @@ function (dojo, declare) {
             for (var i in notif.args.tokens) {
                 var player_id = notif.args.tokens[i]['player_id'];
                 var token_id = notif.args.tokens[i]['token_id'];
+                var token_name = notif.args.tokens[i]['token_name'];
                 this.placeToken(player_id, token_id);
+                this.addTooltip('playertoken_' + token_id, token_name, '' );
             }
         },
 
@@ -358,7 +368,7 @@ function (dojo, declare) {
             // Move all cards on table to given table, then destroy them
             var winner_id = notif.args.player_id;
             for ( var player_id in this.gamedatas.players) {
-                var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
+                var anim = this.slideToObject('cardontable_' + player_id, 'cardontable_' + winner_id);
                 dojo.connect(
                     anim, 
                     'onEnd', 

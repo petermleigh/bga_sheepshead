@@ -57,7 +57,7 @@ $gameinfos = array(
 // Note: if you are NOT using any tie breaker, leave the empty string.
 //
 // Example: 'tie_breaker_description' => totranslate( "Number of remaining cards in hand" ),
-'tie_breaker_description' => "Non-picking team loses ties",
+'tie_breaker_description' => totranslate("Most hands won (either as picker, partner, or opposing teammate)"),
 
 // If in the game, all losers are equal (no score to rank them or explicit in the rules that losers are not ranked between them), set this to true 
 // The game end result will display "Winner" for the 1st player and "Loser" for all other players
@@ -81,13 +81,13 @@ $gameinfos = array(
 'complexity' => 3,    
 
 // Luck of the game, from 0 (absolutely no luck in this game) to 5 (totally luck driven)
-'luck' => 3,    
+'luck' => 2,    
 
 // Strategy of the game, from 0 (no strategy can be setup) to 5 (totally based on strategy)
 'strategy' => 3,    
 
 // Diplomacy of the game, from 0 (no interaction in this game) to 5 (totally based on interaction and discussion between players)
-'diplomacy' => 3,    
+'diplomacy' => 4,    
 
 // Colors attributed to players
 'player_colors' => array( "ff0000", "008000", "0000ff", "ffa500", "773300" ),
@@ -122,9 +122,13 @@ $gameinfos = array(
 // Each paragraph must be wrapped with totranslate() for translation and should not contain html (plain text without formatting).
 // A good length for this text is between 100 and 150 words (about 6 to 9 lines on a standard display)
 'presentation' => array(
-//    totranslate("This wonderful game is about geometric shapes!"),
-//    totranslate("It was awarded best triangle game of the year in 2005 and nominated for the Spiel des Jahres."),
-//    ...
+    totranslate("Sheepshead is a trick-taking card game that is played with 7 through A of a standard card deck. Each hand starts with a player choosing to take the blind (extra cards) and will be part of the picking team. 
+    the player with the Jack of Diamonds will be the picking player's partner and keeps this information secret until they decide to play their Jack of Diamonds. The remaining three players
+    are on another team."),
+    totranslate("Each team competes to win the most points by winning tricks durring the hand. The team with the most points will score according to the point differential. 
+    There are a total of 14 Trump cards: all four queens, all four jacks, followed by all of the diamonds. The Queens and Jacks will be played as Diamonds and have strenght determined by their suit. 
+    The card strength doesn't correspond to the number of points the cards are worth with 10s and Aces worth the most points and the most powerful cards (Queens and Jacks) worth very few points."),
+    totranslate("The game lasts for a set number of rounds where each player will get a chance to 'deal' (or 5 hands). The player with the highest score wins!")    
 ),
 
 // Games tags (categories)

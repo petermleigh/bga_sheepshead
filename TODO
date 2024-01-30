@@ -1,27 +1,14 @@
-bugs:
-    check stats at end of game
-    game option not working
-
-features to add before alpha:
-    token tooltips
-    cheat sheet dialog
-checklist:
-    https://en.doc.boardgamearena.com/Pre-release_checklist
-    box art
-    game metadata
-
 features to add before beta:
     game options:
-        game length - 1 to 10 rounds
+        picker always chooses a fail suit ace card 
         game length - 5/10/15/20$ play until someone is out
         lester on stuck bid
-        blitzing and cracking
         doubler on stuck bid (redeal and 2x points on next hand)
-        picker always chooses a fail suit ace card 
+        blitzing and cracking
 
 features to add before release:
     better card graphics
         https://github.com/thoun/bga-cards/tree/main/demo
-        grey out unplayable cards
-    game options for non-5 player:
+        grey out / offset unplayable cards
+    game options:
         https://www.sheepshead.org/rules/sheepshead-variations/

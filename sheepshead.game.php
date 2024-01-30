@@ -102,8 +102,6 @@ class Sheepshead extends Table
         self::setGameStateInitialValue( 'dealer', 0);
         // Set the number of hands
         self::setGameStateInitialValue( 'hands', 0);
-        //TODO: read this in from game options
-        self::setGameStateInitialValue( 'gameRounds', 1);
         // Initialize stats
         self::initStat( 'table', 'handsPlayed', 0 );     
         self::initStat( 'player', 'averagePointsEarned', 0.0 ); 
@@ -163,14 +161,17 @@ class Sheepshead extends Table
             array(
                 'player_id' => self::getGameStateValue('dealer'),
                 'token_id' => $this->token['dealer']['token_id'],
+                'token_name' => $this->token['dealer']['nametr'],
             ),
             array(
                 'player_id' => self::getGameStateValue('picker'),
                 'token_id' => $this->token['picker']['token_id'],
+                'token_name' => $this->token['picker']['nametr'],
             ),
             array(
                 'player_id' => self::getGameStateValue('revealedPartner'),
                 'token_id' => $this->token['revealedPartner']['token_id'],
+                'token_name' => $this->token['revealedPartner']['nametr'],
             ),
         );
 
@@ -469,7 +470,7 @@ class Sheepshead extends Table
                 '', 
                 array(
                     'tokens' => array(
-                        array('token_id' => $this->token['revealedPartner']['token_id'], 'player_id' => $player_id),    
+                        array('token_id' => $this->token['revealedPartner']['token_id'], 'token_name' => $this->token['revealedPartner']['nametr'], 'player_id' => $player_id),    
                     )
                 ) 
             );  
@@ -555,9 +556,9 @@ class Sheepshead extends Table
             '', 
             array(
                 'tokens' => array(
-                    array('token_id' => $this->token['dealer']['token_id'], 'player_id' => $dealer_id),
-                    array('token_id' => $this->token['picker']['token_id'], 'player_id' => 0),
-                    array('token_id' => $this->token['revealedPartner']['token_id'], 'player_id' => 0),
+                    array('token_id' => $this->token['dealer']['token_id'], 'token_name' => $this->token['dealer']['nametr'], 'player_id' => $dealer_id),
+                    array('token_id' => $this->token['picker']['token_id'], 'token_name' => $this->token['picker']['nametr'], 'player_id' => 0),
+                    array('token_id' => $this->token['revealedPartner']['token_id'], 'token_name' => $this->token['revealedPartner']['nametr'], 'player_id' => 0),
 
                 )
             ) 
@@ -640,7 +641,7 @@ class Sheepshead extends Table
             '', 
             array(
                 'tokens' => array(
-                    array('token_id' => $this->token['picker']['token_id'], 'player_id' => $picker_id),
+                    array('token_id' => $this->token['picker']['token_id'], 'token_name' => $this->token['picker']['nametr'], 'player_id' => $picker_id),
                 )
             ) 
         );   
@@ -780,16 +781,7 @@ class Sheepshead extends Table
                 $new_scores[$player_id],
             );
         }
-        $this->notifyAllPlayers( "tableWindow", '', array(
-            "id" => 'Scoring',
-            "title" => clienttranslate("Hand Result"),
-            "header" => array(
-                'str' => clienttranslate('${team} team wins!'),
-                'args' => [ 'team' => $winning_team ],
-            ),
-            "table" => $table,
-            "closing" => clienttranslate("Next Hand")
-        )); 
+        
         // Check for end of game
         $num_hands = self::getGameStateValue('hands') + 1;
         $end_of_game = $this->isEndOfGame($num_hands);
@@ -798,9 +790,18 @@ class Sheepshead extends Table
         }
         else{
             self::setGameStateValue('hands', $num_hands);
-            $this->gamestate->nextState("nextHand");
+            $this->gamestate->nextState("nextHand");        
+            $this->notifyAllPlayers( "tableWindow", '', array(
+                "id" => 'Scoring',
+                "title" => clienttranslate("Hand Result"),
+                "header" => array(
+                    'str' => clienttranslate('${team} team wins!'),
+                    'args' => [ 'team' => $winning_team ],
+                ),
+                "table" => $table,
+                "closing" => clienttranslate("Next Hand")
+            )); 
         }
-        
         self::incStat(1, 'handsPlayed');   
         foreach ($players as $player_id => $player) {
             $num_players = self::getPlayersNumber();
@@ -820,6 +821,9 @@ class Sheepshead extends Table
             if ($winning_team != "Picking" && $player_id != $picker_id && $player_id != $partner_id) {
                 self::incStat(1, 'totalHandsWon', $player_id);
             }
+            $hands_won = self::getStat('totalHandsWon', $player_id);
+            $sql = "UPDATE player SET player_score_aux=player_score_aux+$hands_won  WHERE player_id='$player_id'";
+            self::DbQuery($sql);
             
             $num_hands = self::getStat('handsPlayed');
             $num_queens = self::getStat('totalNumberOfQueens', $player_id);
@@ -880,7 +884,9 @@ class Sheepshead extends Table
                     break;
                 //Zombie will burry first 2 cards
                 case "exchangeCards":
-                    $this->exchangeCards($cards[0]['id'], $cards[1]['id']);
+                    $card_id1 = array_pop($cards)['id'];
+                    $card_id2 = array_pop($cards)['id'];
+                    $this->exchangeCards($card_id1, $card_id2);
                     break;
                 //Zombie will play first playable card
                 case "playerTurn":
