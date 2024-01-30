@@ -353,7 +353,14 @@ class Sheepshead extends Table
         }
 
         if ($partner_id == $picker_id) {
-            $picker_points = $picker_points + $partner_points;
+            if ($picker_points == -9){
+                // Loner picker gets no points, -12 points, + 3 for all others
+                $picker_points = -12;
+            }
+            else {
+                // Loner picker 4x opossing team points (vs 2x with partner)
+                $picker_points = $picker_points * 2;
+            }
         }
         
         $player_points = array ();
