@@ -140,7 +140,8 @@ $gameinfos = array(
 //  NOTE: tags are only read during the first deploy from the file gameinfos.inc.php; afterwards, BGA is responsible for setting tags for a game.
 
 'tags' => array( 2 ),
-
+// No 3d for car game.
+'enable_3d' => false,
 
 //////// BGA SANDBOX ONLY PARAMETERS (DO NOT MODIFY)
 
