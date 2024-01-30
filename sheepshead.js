@@ -1,18 +1,11 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Sheepshead implementation : © <Your name here> <Your email address here>
+ * Sheepshead implementation : © Peter Leigh petermleigh@gmail.com
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
  * -----
- *
- * sheepshead.js
- *
- * Sheepshead user interface script
- * 
- * In this file, you are describing the logic of your user interface, in Javascript language.
- *
  */
 
 define([
@@ -24,44 +17,30 @@ define([
 function (dojo, declare) {
     return declare("bgagame.sheepshead", ebg.core.gamegui, {
         constructor: function(){
-            console.log('sheepshead constructor');
             this.cardwidth = 72;
             this.cardheight = 96;
             this.tokenwidth = 30;
             this.tokenheight = 30;
         },
         
-        /*
-            setup:
-            
-            This method must set up the game user interface according to current game situation specified
-            in parameters.
-            
-            The method is called each time the game interface is displayed to a player, ie:
-            _ when the game starts
-            _ when a player refreshes the game page (F5)
-            
-            "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
-        */
-        
         setup: function( gamedatas )
-        {
-            console.log( "Starting game setup" );
-            
+        {         
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
-
             this.playerHand.image_items_per_row = 13; // 13 images per row
             
+            weights = {}
             // Create cards types:
             for (var suit = 1; suit <= 4; suit++) {
                 for (var value = 2; value <= 14; value++) {
                     // Build card type id
                     var card_type_id = this.getCardTypeId(suit, value);
+                    weights[card_type_id] = this.getCardWeight(suit, value);
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
+            this.playerHand.changeItemsWeight(weights) 
 
             // Cards in player's hand
             for ( var i in this.gamedatas.hand) {
@@ -94,8 +73,6 @@ function (dojo, declare) {
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
-
-            console.log( "Ending game setup" );
         },
        
 
@@ -106,9 +83,7 @@ function (dojo, declare) {
         //                  You can use this method to perform some user interface changes at this moment.
         //
         onEnteringState: function( stateName, args )
-        {
-            console.log( 'Entering state: '+stateName );
-            
+        {            
             switch( stateName )
             {
            
@@ -122,8 +97,6 @@ function (dojo, declare) {
         //
         onLeavingState: function( stateName )
         {
-            console.log( 'Leaving state: ' + stateName );
-            
             switch( stateName )
             {
             
@@ -137,8 +110,6 @@ function (dojo, declare) {
         //        
         onUpdateActionButtons: function( stateName, args )
         {
-            console.log( 'onUpdateActionButtons: '+stateName );
-                      
             if( this.isCurrentPlayerActive() )
             {            
                 switch( stateName )
@@ -172,14 +143,48 @@ function (dojo, declare) {
 
         ///////////////////////////////////////////////////
         //// Utility methods
-
-        // Get card type identifier based on its suit and value
+        getCardWeight: function(suit, value) {
+            switch (suit) {
+                case 1:  // spades
+                    weight = 30;
+                    break;
+                case 2: // hearts
+                    weight = 15;
+                    break;
+                case 3: // clubs
+                    weight = 45;
+                    break;
+                case 4: // diamonds
+                    weight = 60;
+                    break;
+                default:
+                    weight = 0;
+                    break;
+            }
+            switch (value) {
+                case 10: // tens
+                    weight = weight + value + 3;
+                    break;
+                case 11: // jacks
+                    weight = ((weight / 15) % 4) + 75;
+                    break;
+                case 12: // queens
+                    weight = ((weight / 15) % 4) + 80;
+                    break;
+                case 13: // kings
+                    weight = weight + value - 3;
+                    break;
+                default:
+                    weight = weight + value
+            }
+            return 85 - weight // reverse it
+        },
+        
         getCardTypeId : function(suit, value) {
             return (suit - 1) * 13 + (value - 2);
         },
 
         placeToken : function(player_id, token_id) {
-            console.log('placing ' + token_id + ' on ' + player_id);
             if (player_id == 0) {
                 // destroy unused tokens
                 dojo.destroy('playertoken_' + token_id);
@@ -269,8 +274,6 @@ function (dojo, declare) {
 
         onPlayerHandSelectionChanged: function() {
             var items = this.playerHand.getSelectedItems();
-            console.log( 'onPlayerHandSelectionChanged: '+items );
-
             if (items.length > 0) {
                 if (this.checkAction('playCard', true)) {
                     this.ajaxcallwrapper('playCard', {id : items[0].id, lock : true})
@@ -303,9 +306,7 @@ function (dojo, declare) {
         
         */
         setupNotifications: function()
-        {
-            console.log( 'notifications subscriptions setup' );
-            
+        {            
             dojo.subscribe('moveTokens', this, "notif_moveTokens");
             dojo.subscribe('newHand', this, "notif_newHand");
             dojo.subscribe('partnerCardChosen', this, "notif_partnerCardChosen");

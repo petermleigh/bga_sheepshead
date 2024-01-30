@@ -2,18 +2,11 @@
  /**
   *------
   * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
-  * Sheepshead implementation : © <Your name here> <Your email address here>
+  * Sheepshead implementation : © Peter Leigh petermleigh@gmail.com
   * 
   * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
   * See http://en.boardgamearena.com/#!doc/Studio for more information.
   * -----
-  * 
-  * sheepshead.game.php
-  *
-  * This is the main file for your game logic.
-  *
-  * In this PHP file, you are going to defines the rules of the game.
-  *
   */
 
 
@@ -455,7 +448,6 @@ class Sheepshead extends Table
         if (self::getGameStateValue('trickSuit') == 0) {
             self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
-        // TODO: remove from game log
         self::notifyAllPlayers(
             'playCard', 
             '', 
@@ -499,6 +491,7 @@ class Sheepshead extends Table
 
     function argChoosePartnerCard() {
         $player_id = self::getActivePlayerId();
+        self::giveExtraTime($player_id);  
         $available_jacks = array(
             1 => array(
                 'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => 11)), 
@@ -599,7 +592,8 @@ class Sheepshead extends Table
         // placeholder for special stuck rules 
         // set the picker
         $picker_id = self::getActivePlayerId();        
-        self::setGameStateValue('picker', $picker_id);   
+        self::setGameStateValue('picker', $picker_id); 
+        self::giveExtraTime($picker_id);  
         $players = self::loadPlayersBasicInfos();         
         self::notifyAllPlayers( 
             'message',
