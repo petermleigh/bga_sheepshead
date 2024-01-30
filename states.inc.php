@@ -50,7 +50,7 @@ $machinestates = array(
     12 => array(
         "name" => "chooseLoner",
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
-        "descriptionmyturn" => clienttranslate('${you} have the Jack of Diamonds. Go alone or choose another card for the partner.'),
+        "descriptionmyturn" => clienttranslate('$Go alone or choose another card for the partner.'),
         "type" => "activeplayer",
         "possibleactions" => array( "goAlone", "choosePartner" ),
         "transitions" => array( "goAlone" => 13, "choosePartner" => 14 )

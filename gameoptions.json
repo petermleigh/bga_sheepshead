@@ -2,22 +2,53 @@
     "110": {
         "name": "Number of Rounds",
         "values": {
-        "1": {
-            "name": "1"
+            "1": {
+                "name": "1"
+            },
+            "2": {
+                "name": "2"
+            },
+            "3": {
+                "name": "3"
+            },
+            "4": {
+                "name": "4"
+            },
+            "5": {
+                "name": "5"
+            }
         },
-        "2": {
-            "name": "2"
-        },
-        "3": {
-            "name": "3"
-        },
-        "4": {
-            "name": "4"
-        },
-        "5": {
-            "name": "5"
-        }
+        "default": 1
     },
-    "default": 1
-  }
+    "120": {
+        "name": "Partner Card",
+        "values": {
+            "1": {
+                "name": "Jack of Diamonds"
+            },
+            "2": {
+                "name": "Picker Chooses Ace"
+            }
+        },
+        "default": 1
+    },
+    "121": {
+        "name": "Announce Loner",
+        "values": {
+            "1": {
+                "name": "No announcement (secret loner)"
+            },
+            "2": {
+                "name": "Picker announces if going alone"
+            }
+        },
+        "displaycondition": [
+            {
+            "type": "otheroption",
+            "id": 120,
+            "value": [1]
+            }
+        ],
+        "default": 1
+    }
 }

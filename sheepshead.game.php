@@ -25,11 +25,12 @@ class Sheepshead extends Table
             "partnerCard" => 14,
             "trickSuit" => 10,
             "bids" => 16,
-            "hands" => 17,
             "defaultPartnerCard" => 18,
             "revealedPartner" => 19,
             // Game Variants
             "gameRounds" => 110,
+            "partnerRule" => 120,
+            "announceLoner" => 121,
             ) 
         );
 
@@ -96,12 +97,16 @@ class Sheepshead extends Table
         self::setGameStateInitialValue( 'partner', 0 );
         self::setGameStateInitialValue( 'revealedPartner', 0 );
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
-        self::setGameStateInitialValue( 'defaultPartnerCard', 48);
-        self::setGameStateInitialValue( 'partnerCard', 48);
+        if (self::getGameStateValue('partnerRule') == 2) {
+            $partner_card = 0;
+        }
+        else {
+            $partner_card = 48;
+        }
+        self::setGameStateInitialValue( 'defaultPartnerCard', $partner_card);
+        self::setGameStateInitialValue( 'partnerCard', $partner_card);
         // Set the dealer player (BGA makes random start player, will make that first player in startHand below)
         self::setGameStateInitialValue( 'dealer', 0);
-        // Set the number of hands
-        self::setGameStateInitialValue( 'hands', 0);
         // Initialize stats
         self::initStat( 'table', 'handsPlayed', 0 );     
         self::initStat( 'player', 'averagePointsEarned', 0.0 ); 
@@ -192,7 +197,7 @@ class Sheepshead extends Table
     function getGameProgression()
     {
         $num_rounds = self::getGameStateValue('gameRounds');
-        $num_hands = self::getGameStateValue('hands');
+        $num_hands = self::getStat('handsPlayed');
         $num_players = self::getPlayersNumber();
         return ($num_hands / ($num_rounds * $num_players)) * 100;
     }
@@ -203,6 +208,12 @@ class Sheepshead extends Table
 ////////////
 
     function getCardFromNo($card_no) {
+        if ($card_no == 0){
+            return array(
+                'type' => 0,
+                'type_arg' => 0,
+            );
+        }
         return array(
             'type' => intdiv($card_no, 13) + 1,
             'type_arg' => ($card_no % 13) + 2,
@@ -352,7 +363,7 @@ class Sheepshead extends Table
             $opposing_points = 3;
         }
 
-        if ($partner_id == $picker_id) {
+        if ($partner_id == 0 || $partner_id == $picker_id) {
             if ($picker_points == -9){
                 // Loner picker gets no points, -12 points, + 3 for all others
                 $picker_points = -12;
@@ -377,6 +388,44 @@ class Sheepshead extends Table
         }
         return $player_points;
     }
+
+    function get_available_partner_cards($picker_id, $card_type_arg) {
+        $available_cards = array(
+            1 => array(
+                'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => $card_type_arg)), 
+                'card_str' => $this->getCardStr(array('type' => 1, 'type_arg' => $card_type_arg)) 
+            ),
+            2 => array(
+                'card_no' => $this->getNofromCard(array('type' => 2, 'type_arg' => $card_type_arg)), 
+                'card_str' => $this->getCardStr(array('type' => 2, 'type_arg' => $card_type_arg)) 
+            ),  
+            3 => array(
+                'card_no' => $this->getNofromCard(array('type' => 3, 'type_arg' => $card_type_arg)), 
+                'card_str' => $this->getCardStr(array('type' => 3, 'type_arg' => $card_type_arg))
+            ),  
+        );
+        $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $picker_id );
+        foreach ($cards_in_hand as $card) {
+            if ($card['type_arg'] == $card_type_arg) {
+                unset($available_cards[$card['type']]);
+            }
+        }
+        return array_values($available_cards);
+    }
+
+    function reveal_partner($partner_id) {        
+        self::setGameStateValue('revealedPartner', $partner_id);
+        self::notifyAllPlayers( 
+            'moveTokens',
+            '', 
+            array(
+                'tokens' => array(
+                    array('token_id' => $this->token['revealedPartner']['token_id'], 'token_name' => $this->token['revealedPartner']['nametr'], 'player_id' => $partner_id),    
+                )
+            ) 
+        ); 
+    }
+    
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Player actions
@@ -471,17 +520,7 @@ class Sheepshead extends Table
             )
         );
         if ($this->getNofromCard($currentCard) == self::getGameStateValue('partnerCard')){
-            self::setGameStateValue('revealedPartner', $player_id);
-            self::notifyAllPlayers( 
-                'moveTokens',
-                '', 
-                array(
-                    'tokens' => array(
-                        array('token_id' => $this->token['revealedPartner']['token_id'], 'token_name' => $this->token['revealedPartner']['nametr'], 'player_id' => $player_id),    
-                    )
-                ) 
-            );  
-
+            $this->reveal_partner($player_id); 
         }
         // Next player
         $this->gamestate->nextState('playCard');
@@ -500,27 +539,12 @@ class Sheepshead extends Table
     function argChoosePartnerCard() {
         $player_id = self::getActivePlayerId();
         self::giveExtraTime($player_id);  
-        $available_jacks = array(
-            1 => array(
-                'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => 11)), 
-                'card_str' => $this->getCardStr(array('type' => 1, 'type_arg' => 11)) 
-            ),
-            2 => array(
-                'card_no' => $this->getNofromCard(array('type' => 2, 'type_arg' => 11)), 
-                'card_str' => $this->getCardStr(array('type' => 2, 'type_arg' => 11)) 
-            ),  
-            3 => array(
-                'card_no' => $this->getNofromCard(array('type' => 3, 'type_arg' => 11)), 
-                'card_str' => $this->getCardStr(array('type' => 3, 'type_arg' => 11))
-            ),  
-        );
-        $cards_in_hand = $this->cards->getCardsInLocation( 'hand', $player_id );
-        foreach ($cards_in_hand as $card) {
-            if ($card['type_arg'] == 11) {
-                unset($available_jacks[$card['type']]);
-            }
+        if (self::getGameStateValue("partnerRule") == 2) {
+            return $this->get_available_partner_cards($player_id, 14);
         }
-        return array_values($available_jacks);
+        else {
+            return $this->get_available_partner_cards($player_id, 11);
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -575,12 +599,27 @@ class Sheepshead extends Table
 
     function stCheckForLoner() {
         $current_player_id = self::getActivePlayerId();
-        $partner_card = self::getGameStateValue('partnerCard');
         // player picked, give them the blind
         $blind_cards = $this->cards->pickCards(2, 'deck', $current_player_id);
         // get all cards in player hand
         $cards = $this->cards->getCardsInLocation('hand', $current_player_id);
-        self::notifyPlayer($current_player_id, 'newHand', '', array ('cards' => $cards ));
+        self::notifyPlayer($current_player_id, 'newHand', '', array ('cards' => $cards ));        
+        self::notifyAllPlayers( 
+            'moveTokens',
+            '', 
+            array(
+                'tokens' => array(
+                    array('token_id' => $this->token['picker']['token_id'], 'token_name' => $this->token['picker']['nametr'], 'player_id' => $current_player_id),
+                )
+            ) 
+        );   
+        // Check if picker needs to choose a partner card or go alone
+        if (self::getGameStateValue('partnerRule') == 2) {
+            // Always ask Picker when playing Called Ace rule
+                $this->gamestate->nextState("loner");
+                return;
+        }
+        $partner_card = self::getGameStateValue('partnerCard');
         foreach ($cards as $card) {
             $card_no = $this->getNofromCard($card);
             if ($card_no == $partner_card) {
@@ -592,8 +631,22 @@ class Sheepshead extends Table
     }
 
     function stSetLoner() {
-        // placeholder for special loner rules        
+        // placeholder for special loner rules 
         $this->gamestate->nextState("");
+        // reveal loner chosen on "choose Ace rule" or when specified for Jack of diamonds
+        if (self::getGameStateValue('partnerRule') == 2 || self::getGameStateValue('announceLoner') == 2){
+            $player_id = self::getActivePlayerId();   
+            $players = self::loadPlayersBasicInfos();            
+            $this->reveal_partner($player_id);  
+            self::notifyAllPlayers( 
+                'message',
+                clienttranslate('${player_name} is going alone'), 
+                array(
+                    'player_id' => $player_id,
+                    'player_name' => $players[$player_id]['player_name']
+                ) 
+            );
+        }
     }
 
     function stSetStuckBid() {
@@ -643,15 +696,6 @@ class Sheepshead extends Table
                 'player_id' => $partner_id,
             )
         );
-        self::notifyAllPlayers( 
-            'moveTokens',
-            '', 
-            array(
-                'tokens' => array(
-                    array('token_id' => $this->token['picker']['token_id'], 'token_name' => $this->token['picker']['nametr'], 'player_id' => $picker_id),
-                )
-            ) 
-        );   
         $players = self::loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $num_queens = 0;
@@ -664,14 +708,14 @@ class Sheepshead extends Table
                     $num_queens += 1;
                 }
             }
-            self::incStat($num_queens, 'averageNumberOfQueens', $player_id);     
-            self::incStat($num_trump, 'averageNumberOfTrump', $player_id); 
+            self::incStat($num_queens, 'totalNumberOfQueens', $player_id);     
+            self::incStat($num_trump, 'totalNumberOfTrump', $player_id); 
             if ($player_id == $picker_id) {
                 self::incStat(1, 'numPick', $player_id);
                 if ($player_id == $dealer_id) {
                     self::incStat(1, 'numStuckPick', $player_id);
                 }
-                if ($player_id == $partner_id) {
+                if ($partner_id == 0 || $partner_id == $player_id) {
                     self::incStat(1, 'numLoner', $player_id);
                 }
             }
@@ -696,6 +740,7 @@ class Sheepshead extends Table
             // Move all cards to "cardswon" of the given player
             $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
             $best_value_player_id = $this->getTrickWinner($cards_on_table);
+            self::incStat(1, 'totalTricksTaken', $best_value_player_id);    
             
             // Active this player => he's the one who starts the next trick
             $this->gamestate->changeActivePlayer( $best_value_player_id );
@@ -719,8 +764,7 @@ class Sheepshead extends Table
                 array(
                     'player_id' => $best_value_player_id
                 ) 
-            );
-        
+            );    
             if ($this->cards->countCardInLocation('hand') == 0) {
                 // End of the hand
                 $this->gamestate->nextState("endHand");
@@ -790,13 +834,13 @@ class Sheepshead extends Table
         }
         
         // Check for end of game
-        $num_hands = self::getGameStateValue('hands') + 1;
+        self::incStat(1, 'handsPlayed'); 
+        $num_hands = max(self::getStat('handsPlayed'), 1);  // making sure no div by zero
         $end_of_game = $this->isEndOfGame($num_hands);
         if ($end_of_game){
             $this->gamestate->nextState("endGame");
         }
         else{
-            self::setGameStateValue('hands', $num_hands);
             $this->gamestate->nextState("nextHand");        
             $this->notifyAllPlayers( "tableWindow", '', array(
                 "id" => 'Scoring',
@@ -808,20 +852,9 @@ class Sheepshead extends Table
                 "table" => $table,
                 "closing" => clienttranslate("Next Hand")
             )); 
-        }
-        self::incStat(1, 'handsPlayed');   
+        }  
         foreach ($players as $player_id => $player) {
-            $num_players = self::getPlayersNumber();
-            $cards_taken = 0;      
-            $cards = $this->cards->getCardsInLocation("cardswon");
-            foreach ( $cards as $card ) {
-                if ($card ['location_arg'] == $player_id) {
-                    $cards_taken += 1;
-                }
-            }
-            $tricks_taken = intdiv($cards_taken, $num_players);
             self::incStat($player_hand_points[$player_id], 'totalPointsEarned', $player_id);
-            self::incStat($tricks_taken, 'totalTricksTaken', $player_id);
             if ($winning_team == "Picking" && ($player_id == $picker_id || $player_id == $partner_id)) {
                 self::incStat(1, 'totalHandsWon', $player_id);
             }
@@ -829,17 +862,18 @@ class Sheepshead extends Table
                 self::incStat(1, 'totalHandsWon', $player_id);
             }
             $hands_won = self::getStat('totalHandsWon', $player_id);
-            $sql = "UPDATE player SET player_score_aux=player_score_aux+$hands_won  WHERE player_id='$player_id'";
-            self::DbQuery($sql);
-            
-            $num_hands = self::getStat('handsPlayed');
+            $num_points = self::getStat('totalPointsEarned', $player_id);
             $num_queens = self::getStat('totalNumberOfQueens', $player_id);
             $num_trump = self::getStat('totalNumberOfTrump', $player_id);
-            
-            self::setStat($player_hand_points[$player_id] / $num_hands, 'averagePointsEarned', $player_id); 
-            self::setStat($tricks_taken / $num_hands, 'averageTricksTaken', $player_id);    
+            $num_tricks = self::getStat('totalTricksTaken', $player_id);
+            //Setting average values
+            self::setStat($num_points / $num_hands, 'averagePointsEarned', $player_id); 
+            self::setStat($num_tricks / $num_hands, 'averageTricksTaken', $player_id);    
             self::setStat($num_queens / $num_hands, 'averageNumberOfQueens', $player_id);     
             self::setStat($num_trump / $num_hands, 'averageNumberOfTrump', $player_id); 
+            // setting tiebreaker score
+            $sql = "UPDATE player SET player_score_aux=player_score_aux+$hands_won  WHERE player_id='$player_id'";
+            self::DbQuery($sql);
         }
     }
 
