@@ -46,7 +46,6 @@ function (dojo, declare) {
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
-            console.log(JSON.stringify(weights))
             this.playerHand.changeItemsWeight(weights);
 
             // Cards in player's hand

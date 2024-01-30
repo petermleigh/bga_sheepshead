@@ -1,10 +1,13 @@
 features to add before beta:
+    Center table and cards
+
     game options:
         picker always chooses a fail suit ace card 
-        game length - 5/10/15/20$ play until someone is out
+        redeal on stuck bid
         lester on stuck bid
         doubler on stuck bid (redeal and 2x points on next hand)
         blitzing and cracking
+        game length - 5/10/15/20$ play until someone is out
 
 features to add before release:
     better card graphics

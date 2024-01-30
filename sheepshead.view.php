@@ -23,24 +23,29 @@ class view_sheepshead_sheepshead extends game_view
   	{		
   	    // Get players & players number
         $players = $this->game->loadPlayersBasicInfos();
-        $players_nbr = count( $players );
 
         /*********** Place your code below:  ************/
         $template = self::getGameName() . "_" . self::getGameName();
         
-        $directions = array('S', 'SW', 'NW', 'NE', 'SE');
+        $directions = array('S', 'SW', 'NW', 'NE', 'SE');  
+        global $g_user;
+        $current_player_id = $g_user->get_id();
+        $player_to_dir = array();
+        foreach ($directions as $dir) {
+            $player_to_dir[$current_player_id] = $dir;
+            $current_player_id = $this->game->getPlayerAfter($current_player_id);
+        }
         
         // this will inflate our player block with actual players data
         $this->page->begin_block($template, "playerhandblock");
         foreach ( $players as $player_id => $info ) {
-            $dir = array_shift($directions);
             $this->page->insert_block(
                 "playerhandblock", 
                 array(
                     "PLAYER_ID" => $player_id,
                     "PLAYER_NAME" => $info['player_name'],
                     "PLAYER_COLOR" => $info['player_color'],
-                    "DIR" => $dir 
+                    "DIR" => $player_to_dir[$player_id]
                 )
             );
         }
