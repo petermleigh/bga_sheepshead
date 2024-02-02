@@ -1,16 +1,15 @@
 features to add before beta:
     Center table and cards
+    fix spectator view
 
     game options:
-        game length - 5/10/15/20$ play until someone is out
-        redeal on stuck bid
-        lester on stuck bid
-        doubler on stuck bid (redeal and 2x points on next hand)
         blitzing and cracking
 
 features to add before release:
     better card graphics
         https://github.com/thoun/bga-cards/tree/main/demo
         grey out / offset unplayable cards
-    game options:
+        option to confirm play
+    other player number game options (start with 4):
         https://www.sheepshead.org/rules/sheepshead-variations/
+        Play for money > 1 round and allow people to leave without penalty

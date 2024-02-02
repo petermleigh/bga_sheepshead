@@ -75,6 +75,7 @@ function (dojo, declare) {
 
             $("player_card_span").innerHTML = this.gamedatas.partnercardstr;
             $("current_trick_span").innerHTML = this.gamedatas.tricksuitstr;
+            $("points_span").innerHTML = this.getPointsSpanStr(this.gamedatas.leaster, this.gamedatas.doublers);
 
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -187,8 +188,18 @@ function (dojo, declare) {
             return 85 - weight // reverse it
         },
         
-        getCardTypeId : function(suit, value) {
+        getCardTypeId: function(suit, value) {
             return (suit - 1) * 13 + (value - 2);
+        },
+
+        getPointsSpanStr: function(leaster, doublers) {
+            if (leaster == 1){
+                return  "Leaster Hand";
+            }
+            if (doublers > 0){
+                return doublers * 2 + "x Points";
+            }
+            return "";
         },
 
         placeToken : function(player_id, token_id) {
@@ -318,9 +329,11 @@ function (dojo, declare) {
             dojo.subscribe('newHand', this, "notif_newHand");
             dojo.subscribe('partnerCardChosen', this, "notif_partnerCardChosen");
             dojo.subscribe('playCard', this, "notif_playCard");
-            dojo.subscribe('trickWin', this, "notif_trickWin" );
-            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer" );
-            dojo.subscribe('newScores', this, "notif_newScores" );
+            dojo.subscribe('trickWin', this, "notif_trickWin");
+            dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
+            dojo.subscribe('newScores', this, "notif_newScores");
+            dojo.subscribe('doublers', this, "notif_setDoublers");
+            dojo.subscribe('leaster', this, "notif_setLeaster");
  
             this.notifqueue.setSynchronous( 'trickWin', 1000 );
 
@@ -332,7 +345,7 @@ function (dojo, declare) {
                 var token_id = notif.args.tokens[i]['token_id'];
                 var token_name = notif.args.tokens[i]['token_name'];
                 this.placeToken(player_id, token_id);
-                this.addTooltip('playertoken_' + token_id, token_name, '' );
+                this.addTooltip('playertoken_' + token_id, token_name, '');
             }
         },
 
@@ -380,11 +393,20 @@ function (dojo, declare) {
         },
 
         notif_newScores : function(notif) {
+            $("points_span").innerHTML = this.getPointsSpanStr(null, null);  
             // Update players' scores
             for ( var player_id in notif.args.newScores) {
                 this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
             }
         },
 
+        notif_setDoublers : function(notif) {
+            $("points_span").innerHTML = this.getPointsSpanStr(null, notif.args.doublers);
+        },
+
+        notif_setLeaster : function(notif) {
+            $("points_span").innerHTML = this.getPointsSpanStr(notif.args.leaster, null);  
+            $("player_card_span").innerHTML = "";        
+        },
    });             
 });

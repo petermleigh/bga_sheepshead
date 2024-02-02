@@ -50,7 +50,7 @@ $machinestates = array(
     12 => array(
         "name" => "chooseLoner",
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
-        "descriptionmyturn" => clienttranslate('$Go alone or choose another card for the partner.'),
+        "descriptionmyturn" => clienttranslate('Go alone or choose another card for the partner.'),
         "type" => "activeplayer",
         "possibleactions" => array( "goAlone", "choosePartner" ),
         "transitions" => array( "goAlone" => 13, "choosePartner" => 14 )
@@ -76,22 +76,22 @@ $machinestates = array(
         "description" => clienttranslate('${actplayer} Picked and is exchanging cards'),
         "descriptionmyturn" => clienttranslate('${you} must put 2 cards in the Blind (these will be added to your score at the end of the hand)'),
         "type" => "activeplayer",
-        "possibleactions" => array( "exchangeCards" ),
-        "transitions" => array( "exchangeCards" => 20 )
+        "possibleactions" => array("exchangeCards"),
+        "transitions" => array("exchangeCards" => 20)
     ),
     16 => array(
         "name" => "setStuckBid",
         "description" => "",
         "type" => "game",
         "action" => "stSetStuckBid",
-        "transitions" => array( "" => 11 )
+        "transitions" => array("" => 11)
     ),
     17 => array(
         "name" => "nextBidder",
         "description" => "",
         "type" => "game",
         "action" => "stNextBidder",
-        "transitions" => array( "nextBidder" => 10, "stuck" => 16 )
+        "transitions" => array("nextBidder" => 10, "stuck" => 16, "redeal" => 2, "leaster" => 20)
     ),
 
     // Update table info for play

@@ -21,7 +21,10 @@
             Current Trick Suit<br>
             <span id="current_trick_span"></span>
         </div>
-        <div id="tokens" class="tokenstash"></div>
+        <br>
+        <div>
+            <span id="points_span"></span>
+        </div>
     </div>
 </div>
 <div id="card_help">

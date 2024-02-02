@@ -33,13 +33,13 @@
         "default": 1
     },
     "121": {
-        "name": "Announce Loner",
+        "name": "Secret Loner",
         "values": {
             "1": {
-                "name": "No announcement (secret loner)"
+                "name": "On"
             },
             "2": {
-                "name": "Picker announces if going alone"
+                "name": "Off"
             }
         },
         "displaycondition": [
@@ -50,5 +50,62 @@
             }
         ],
         "default": 1
+    },
+    "122": {
+        "name": "Picker must have a card in the same suit to pick an Ace",
+        "values": {
+            "1": {
+                "name": "On"
+            },
+            "2": {
+                "name": "Off"
+            }
+        },
+        "displaycondition": [
+            {
+            "type": "otheroption",
+            "id": 120,
+            "value": [2]
+            }
+        ],
+        "default": 1
+    },
+    "123": {
+        "name": "If picker can't pick Ace, they can pick a Ten",
+        "values": {
+            "1": {
+                "name": "On"
+            },
+            "2": {
+                "name": "Off"
+            }
+        },
+        "displaycondition": [
+            {
+            "type": "otheroption",
+            "id": 120,
+            "value": [2]
+            }
+        ],
+        "default": 1
+    },
+    "130": {
+        "name": "No picker chosen",
+        "values": {
+            "1": {
+                "name": "Dealer must pick (stick the dealer)"
+            },
+            "2": {
+                "name": "Re-deal"
+            },
+            "3": {
+                "name": "Re-deal and double the points (doubler)"
+            },
+            "4": {
+                "name": "Play leaster hand"
+            }
+        },
+        "default": 1
     }
+    
 }
