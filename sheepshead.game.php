@@ -165,10 +165,10 @@ class Sheepshead extends Table
         $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
 
         // Partner Card
-        $result['partnercardstr'] = $partner_card_str;
+        $result['partnercardstr'] = clienttranslate("Partner Card<br>$partner_card_str");
 
         // Current trick suit
-        $result['tricksuitstr'] = $trick_suit_str;
+        $result['tricksuitstr'] = clienttranslate("Current Trick Suit<br>$trick_suit_str");
 
         // Game point rules
         $result['doublers'] = self::getGameStateValue('doublers');
@@ -210,6 +210,9 @@ class Sheepshead extends Table
     function getGameProgression()
     {
         $num_rounds = self::getGameStateValue('gameRounds');
+        if ($num_rounds == 0) {
+            return 0;
+        }
         $num_hands = self::getStat('handsPlayed');
         $num_players = self::getPlayersNumber();
         return ($num_hands / ($num_rounds * $num_players)) * 100;
@@ -525,13 +528,13 @@ class Sheepshead extends Table
             clienttranslate("Team"),
             clienttranslate("Last Hand Score"), 
             clienttranslate("Current Score"),
+            clienttranslate("Tricks Taken"),
         );
         if ($leaster) {
-            $table_header[] = clienttranslate("Cards Taken");
             unset($table_header[2]);
         }         
         $table = array($table_header);
-        $winning_team = "Picking Team";
+        $winning_team = clienttranslate("Picking Team");
         $picking_points = 0;
         $opposing_points = 0;
         foreach ($player_hand_points as $player_id => $hand_points) {
@@ -549,9 +552,9 @@ class Sheepshead extends Table
             else {
                 $opposing_points += $hand_points;
                 if ($player_points[$player_id] > 0) {
-                    $winning_team = "Opposing";
+                    $winning_team = clienttranslate("Opposing Team");
                 }
-                $team = clienttranslate("Opposing Team");
+                $team = clienttranslate("Opposing");
             }
             $player_row = array(
                 $players[$player_id]['player_name'],
@@ -559,12 +562,12 @@ class Sheepshead extends Table
                 $team,
                 $player_points[$player_id],
                 $new_scores[$player_id],
+                intdiv($this->cards->countCardInLocation('cardswon', $player_id), self::getPlayersNumber()),
             );
             if ($leaster) {
                 if ($player_points[$player_id] > 0) {
                     $winning_team = $players[$player_id]['player_name'];
                 }
-                $player_row[] = $this->cards->countCardInLocation('cardswon', $player_id);
                 unset($player_row[2]);
             } 
             $table[] = $player_row;
@@ -572,11 +575,8 @@ class Sheepshead extends Table
         if ($leaster) {
             $score_str = clienttranslate("Leaster");
         }
-        else if ($winning_team == "Picking Team") {
-            $score_str = "$picking_points - $opposing_points";
-        }
         else {
-            $score_str = "$opposing_points - $picking_points";
+            $score_str = "$picking_points - $opposing_points";
         }
         $mult = $this->getDoublersMult();
         if ($mult > 1) {
@@ -600,7 +600,7 @@ class Sheepshead extends Table
                     ],
                 ),
                 "table" => $table,
-                "closing" => clienttranslate("Next Hand")
+                "closing" => clienttranslate("Next Hand"),
             )
         ); 
     }
@@ -673,6 +673,7 @@ class Sheepshead extends Table
         if (self::getGameStateValue('trickSuit') == 0) {
             self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
+        $trick_suit_str = $this->suit[self::getGameStateValue('trickSuit')]['uni'];
         self::notifyAllPlayers(
             'playCard', 
             '', 
@@ -684,7 +685,7 @@ class Sheepshead extends Table
                 'value' => $currentCard['type_arg'],
                 'suit' => $currentCard['type'], 
                 'card_str' => $this->getCardStr($currentCard),
-                'trick_suit_str' => $this->suit[self::getGameStateValue('trickSuit')]['uni'],
+                'trick_suit_str' => "Current Trick Suit<br>$trick_suit_str",
             )
         );
         if ($this->getNofromCard($currentCard) == self::getGameStateValue('partnerCard')){
@@ -732,7 +733,9 @@ class Sheepshead extends Table
         self::notifyAllPlayers(
             'partnerCardChosen', 
             '', 
-            array ('partner_card_str' => $partner_card_str)
+            array(
+                'partner_card_str' => clienttranslate("Partner Card<br>$partner_card_str")
+            )
         );
         // set the start player
         $dealer_id = self::getGameStateValue('dealer');
@@ -889,11 +892,14 @@ class Sheepshead extends Table
         $leader_id = self::getPlayerAfter($dealer_id);
         $this->gamestate->changeActivePlayer($leader_id);
         // update partner caard info
-        $partner_card_str = $this->getCardStr($this->getCardFromNo($partner_card));
+        $partner_card_uni = $this->getCardStr($this->getCardFromNo($partner_card));
         self::notifyAllPlayers(
             'partnerCardChosen', 
-            clienttranslate('Partner card is ${partner_card_str}'), 
-            array ('partner_card_str' => $partner_card_str)
+            clienttranslate('Partner card is ${partner_card_uni}'), 
+            array (
+                "partner_card_str" => "Partner Card<br>$partner_card_uni",
+                "partner_card_uni" => $partner_card_uni,
+            )
         );
         // Notify the partner        
         self::notifyPlayer(
@@ -975,6 +981,10 @@ class Sheepshead extends Table
             );    
             if ($this->cards->countCardInLocation('hand') == 0) {
                 // End of the hand
+                if (self::getGameStateValue('leaster')) {
+                    // give last trick winner the blind
+                    $this->cards->moveAllCardsInLocation('deck', 'cardswon', null, $best_value_player_id);                    
+                }
                 $this->gamestate->nextState("endHand");
             } else {
                 // End of the trick
@@ -990,7 +1000,7 @@ class Sheepshead extends Table
         
     }
 
-    function stEndHand() {   
+    function stEndHand() {
         // Count and score points, then end the game or go to the next hand.
         $players = self::loadPlayersBasicInfos();
         $player_hand_points = $this->calcHandPoints($players);

@@ -1,7 +1,5 @@
 features to add before beta:
     Center table and cards
-    fix spectator view
-    need to add hand review on re-entry
     add trick count per player
 
     game options:
@@ -12,7 +10,6 @@ features to add before release:
         https://github.com/thoun/bga-cards/tree/main/demo
         grey out / offset unplayable cards
         option to confirm play
-        show blind cards on end of hand
-    other player number game options (start with 4):
+    other player number game options (start with 3, 4, 6 and 7):
         https://www.sheepshead.org/rules/sheepshead-variations/
         Play for "money" > 1 round and allow people to leave without penalty

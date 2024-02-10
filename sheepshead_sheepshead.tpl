@@ -12,19 +12,11 @@
     </div>
     <!-- END playerhandblock -->
     <div class="playertable playertable_info">
-        <div>
-            Partner Card<br>
-            <span id="player_card_span" class="bgabutton_black"></span>
-        </div>
+        <div id="partner_card"></div>
         <br>
-        <div>
-            Current Trick Suit<br>
-            <span id="current_trick_span"></span>
-        </div>
+        <div id="current_trick"></div>
         <br>
-        <div>
-            <span id="points_span"></span>
-        </div>
+        <div id="points_details"></div>
     </div>
 </div>
 <div id="card_help">

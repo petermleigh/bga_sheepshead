@@ -73,9 +73,9 @@ function (dojo, declare) {
                 this.addTooltip('playertoken_' + token_id, token.token_name, '' );
             }
 
-            $("player_card_span").innerHTML = this.gamedatas.partnercardstr;
-            $("current_trick_span").innerHTML = this.gamedatas.tricksuitstr;
-            $("points_span").innerHTML = this.getPointsSpanStr(this.gamedatas.leaster, this.gamedatas.doublers);
+            $("partner_card").innerHTML = this.gamedatas.partnercardstr;
+            $("current_trick").innerHTML = this.gamedatas.tricksuitstr;
+            $("points_details").innerHTML = this.getPointsSpanStr(this.gamedatas.leaster, this.gamedatas.doublers);
 
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -363,17 +363,17 @@ function (dojo, declare) {
 
         notif_partnerCardChosen : function(notif) {
             // Update partner card
-            $("player_card_span").innerHTML = notif.args.partner_card_str;
+            $("partner_card").innerHTML = notif.args.partner_card_str;
         },
 
         notif_playCard : function(notif) {
-            $("current_trick_span").innerHTML = notif.args.trick_suit_str;
+            $("current_trick").innerHTML = notif.args.trick_suit_str;
             // Play a card on the table
             this.playCardOnTable(notif.args.player_id, notif.args.suit, notif.args.value, notif.args.card_id);
         },
 
         notif_trickWin : function(notif) {
-            $("current_trick_span").innerHTML = "";
+            $("current_trick").innerHTML = "";
         },
 
         notif_giveAllCardsToPlayer : function(notif) {
@@ -393,7 +393,7 @@ function (dojo, declare) {
         },
 
         notif_newScores : function(notif) {
-            $("points_span").innerHTML = this.getPointsSpanStr(null, null);  
+            $("points_details").innerHTML = this.getPointsSpanStr(null, null);  
             // Update players' scores
             for ( var player_id in notif.args.newScores) {
                 this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
@@ -401,12 +401,12 @@ function (dojo, declare) {
         },
 
         notif_setDoublers : function(notif) {
-            $("points_span").innerHTML = this.getPointsSpanStr(null, notif.args.doublers);
+            $("points_details").innerHTML = this.getPointsSpanStr(null, notif.args.doublers);
         },
 
         notif_setLeaster : function(notif) {
-            $("points_span").innerHTML = this.getPointsSpanStr(notif.args.leaster, null);  
-            $("player_card_span").innerHTML = "";        
+            $("points_details").innerHTML = this.getPointsSpanStr(notif.args.leaster, null);  
+            $("partner_card").innerHTML = "";        
         },
    });             
 });

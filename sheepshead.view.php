@@ -39,13 +39,19 @@ class view_sheepshead_sheepshead extends game_view
         // this will inflate our player block with actual players data
         $this->page->begin_block($template, "playerhandblock");
         foreach ( $players as $player_id => $info ) {
+            if (array_key_exists($player_id, $player_to_dir)){
+                $dir = $player_to_dir[$player_id];
+            }
+            else {
+                $dir = array_shift($directions);
+            }
             $this->page->insert_block(
                 "playerhandblock", 
                 array(
                     "PLAYER_ID" => $player_id,
                     "PLAYER_NAME" => $info['player_name'],
                     "PLAYER_COLOR" => $info['player_color'],
-                    "DIR" => $player_to_dir[$player_id]
+                    "DIR" => $dir
                 )
             );
         }
