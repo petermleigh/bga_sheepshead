@@ -326,12 +326,32 @@ class Sheepshead extends Table
         return $player_hand_points;
     }
 
+    function getDoublersMult(){
+        // Double points if doublers active
+        $doublers = self::getGameStateValue('doublers');
+        $mult = 1;
+        if ($doublers > 0){
+            $mult = $doublers * 2;
+        }
+        return $mult;
+    }
+
     function calcLeasterPoints($player_hand_points) {
         $player_points = array ();
-        $min_score = min($player_hand_points);
-        foreach ($player_hand_points as $player_id => $hand_points) {            
-            $cards_won = $this->cards->countCardInLocation('cardswon', $player_id),;
-            if ($cards_won > 0 && $hand_points == $min_score){
+        $min_score = 121;
+        foreach ($player_hand_points as $player_id => $hand_points) { 
+            $cards_won = $this->cards->countCardInLocation('cardswon', $player_id);
+            if ($cards_won > 0 && $hand_points <= $min_score){
+                $min_score = $hand_points;
+            }
+        }
+        $min_score_count = array_count_values($player_hand_points)[$min_score];
+        foreach ($player_hand_points as $player_id => $hand_points) {   
+            if ($min_score_count > 1){
+                // no points awarded for tie
+                $player_points[$player_id] = 0;
+            }
+            else if ($hand_points == $min_score){
                 $player_points[$player_id] = 4;
             }
             else {
@@ -405,11 +425,7 @@ class Sheepshead extends Table
             }
         }
         // Double points if doublers active
-        $doublers = self::getGameStateValue('doublers');
-        $mult = 1;
-        if ($doublers > 0){
-            $mult = $doublers * 2;
-        }
+        $mult = $this->getDoublersMult();
         $player_points = array ();
         foreach ($player_hand_points as $player_id => $player) {
             if ($player_id == $picker_id) {
@@ -423,6 +439,17 @@ class Sheepshead extends Table
             }
         }
         return $player_points;
+    }
+
+    function updateScores($player_points) {     
+        // Apply scores to player
+        foreach ($player_points as $player_id => $points) {
+            $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
+            self::DbQuery($sql);
+        }
+        $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+        self::notifyAllPlayers("newScores", '', array('newScores' => $new_scores));
+        return $new_scores;
     }
 
     function get_available_partner_cards($picker_id, $card_type_arg) {
@@ -484,6 +511,99 @@ class Sheepshead extends Table
             ) 
         ); 
     }
+
+    function display_score_dialog($new_scores){
+        $leaster = self::getGameStateValue('leaster');
+        $players = self::loadPlayersBasicInfos();
+        $player_hand_points = $this->calcHandPoints($players);
+        $player_points = $this->calcPoints($player_hand_points);
+        $picker_id = self::getGameStateValue('picker');
+        $partner_id = self::getGameStateValue('partner');
+        $table_header = array(
+            clienttranslate("Player Name"), 
+            clienttranslate("Points Taken"),
+            clienttranslate("Team"),
+            clienttranslate("Last Hand Score"), 
+            clienttranslate("Current Score"),
+        );
+        if ($leaster) {
+            $table_header[] = clienttranslate("Cards Taken");
+            unset($table_header[2]);
+        }         
+        $table = array($table_header);
+        $winning_team = "Picking Team";
+        $picking_points = 0;
+        $opposing_points = 0;
+        foreach ($player_hand_points as $player_id => $hand_points) {
+            if ($player_id == $picker_id) {
+                $picking_points += $hand_points;
+                $team = clienttranslate("Picker");
+                if ($player_id == $partner_id) {
+                    $team = clienttranslate("Picker (Alone)");
+                }
+            }
+            else if ($player_id == $partner_id) {
+                $picking_points += $hand_points;
+                $team = clienttranslate('Partner');
+            }
+            else {
+                $opposing_points += $hand_points;
+                if ($player_points[$player_id] > 0) {
+                    $winning_team = "Opposing";
+                }
+                $team = clienttranslate("Opposing Team");
+            }
+            $player_row = array(
+                $players[$player_id]['player_name'],
+                $hand_points,
+                $team,
+                $player_points[$player_id],
+                $new_scores[$player_id],
+            );
+            if ($leaster) {
+                if ($player_points[$player_id] > 0) {
+                    $winning_team = $players[$player_id]['player_name'];
+                }
+                $player_row[] = $this->cards->countCardInLocation('cardswon', $player_id);
+                unset($player_row[2]);
+            } 
+            $table[] = $player_row;
+        }
+        if ($leaster) {
+            $score_str = clienttranslate("Leaster");
+        }
+        else if ($winning_team == "Picking Team") {
+            $score_str = "$picking_points - $opposing_points";
+        }
+        else {
+            $score_str = "$opposing_points - $picking_points";
+        }
+        $mult = $this->getDoublersMult();
+        if ($mult > 1) {
+            $doublers_str = " x$mult";
+        }
+        else{
+            $doublers_str = "";
+        }     
+        $this->notifyAllPlayers(
+            "tableWindow", 
+            '', 
+            array(
+                "id" => 'Scoring',
+                "title" => clienttranslate("Hand Result"),
+                "header" => array(
+                    'str' => clienttranslate('${team} Wins ${score_str}${doublers_str}'),
+                    'args' => [ 
+                        'team' => $winning_team,
+                        'score_str' => $score_str,
+                        'doublers_str' => $doublers_str,
+                    ],
+                ),
+                "table" => $table,
+                "closing" => clienttranslate("Next Hand")
+            )
+        ); 
+    }
     
 
 //////////////////////////////////////////////////////////////////////////////
@@ -523,18 +643,7 @@ class Sheepshead extends Table
     }
 
     function choosePartnerCard($card_no) {
-        self::checkAction("choosePartnerCard");              
-        $partner_card_str = $this->getCardStr($this->getCardFromNo($card_no));
-        $player_id = self::getActivePlayerId();
-        self::notifyAllPlayers(
-            'partnerCardChosen', 
-            clienttranslate('${player_name} chose ${partner_card_str}'), 
-            array (
-                'player_id' => $player_id,
-                'player_name' => self::getActivePlayerName(),
-                'partner_card_str' => $partner_card_str,
-            )
-        );
+        self::checkAction("choosePartnerCard"); 
         if ($card_no == 0) {
             $this->gamestate->nextState('goAlone');
         }
@@ -619,6 +728,12 @@ class Sheepshead extends Table
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         $partner_card = self::getGameStateValue('defaultPartnerCard');
         self::setGameStateValue('partnerCard', $partner_card);
+        $partner_card_str = $this->getCardStr($this->getCardFromNo($partner_card));
+        self::notifyAllPlayers(
+            'partnerCardChosen', 
+            '', 
+            array ('partner_card_str' => $partner_card_str)
+        );
         // set the start player
         $dealer_id = self::getGameStateValue('dealer');
         if ($dealer_id == 0) {
@@ -766,12 +881,20 @@ class Sheepshead extends Table
     function stUpdateBid() {
         $dealer_id = self::getGameStateValue('dealer');
         $picker_id = self::getGameStateValue('picker');
+        $partner_card = self::getGameStateValue('partnerCard');
         // determine the partner        
         $partner_id = $this->getPartnerId();
         self::setGameStateValue('partner', $partner_id);
         // start to the left of the dealer
         $leader_id = self::getPlayerAfter($dealer_id);
         $this->gamestate->changeActivePlayer($leader_id);
+        // update partner caard info
+        $partner_card_str = $this->getCardStr($this->getCardFromNo($partner_card));
+        self::notifyAllPlayers(
+            'partnerCardChosen', 
+            clienttranslate('Partner card is ${partner_card_str}'), 
+            array ('partner_card_str' => $partner_card_str)
+        );
         // Notify the partner        
         self::notifyPlayer(
             $partner_id, 
@@ -867,102 +990,18 @@ class Sheepshead extends Table
         
     }
 
-    function stEndHand() {
+    function stEndHand() {   
         // Count and score points, then end the game or go to the next hand.
         $players = self::loadPlayersBasicInfos();
         $player_hand_points = $this->calcHandPoints($players);
         $player_points = $this->calcPoints($player_hand_points);
-
-        // Apply scores to player
-        foreach ($player_points as $player_id => $points) {
-            $sql = "UPDATE player SET player_score=player_score+$points  WHERE player_id='$player_id'";
-            self::DbQuery($sql);
-        }
-        $new_scores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-        self::notifyAllPlayers("newScores", '', array('newScores' => $new_scores));
-        // Reset special rules
-        self::setGameStateValue('leaster', 0);
-        self::setGameStateValue('doublers', 0);
-        // display table of scores
-        $picker_id = self::getGameStateValue('picker');
-        $partner_id = self::getGameStateValue('partner');
-        $table = array(
-            array(
-                clienttranslate("Player Name"), 
-                clienttranslate("Points Taken"),
-                clienttranslate("Team"),
-                clienttranslate("Last Hand Score"), 
-                clienttranslate("Current Score"),
-                clienttranslate("Cards Taken"),
-            ) 
-        );
-        $winning_team = "Picking";
-        $picking_points = 0;
-        $opposing_points = 0;
-        foreach ($player_hand_points as $player_id => $hand_points) {
-            if ($player_id == $picker_id) {
-                $picking_points += $hand_points;
-                $team = clienttranslate("Picker");
-                if ($player_id == $partner_id) {
-                    $team = clienttranslate("Picker (Alone)");
-                }
-            }
-            else if ($player_id == $partner_id) {
-                $picking_points += $hand_points;
-                $team = clienttranslate('Partner');
-            }
-            else {
-                $opposing_points += $hand_points;
-                if ($player_points[$player_id] > 0) {
-                    $winning_team = "Opposing";
-                }
-                $team = clienttranslate("Opposing");
-            }
-            $table[] = array(
-                $players[$player_id]['player_name'],
-                $hand_points,
-                $team,
-                $player_points[$player_id],
-                $new_scores[$player_id],
-                $this->cards->countCardInLocation('cardswon', $player_id),
-            );
-        }
-        if ($winning_team == "Picking") {
-            $score_str = "$picking_points to $opposing_points";
-        }
-        else {
-            $score_str = "$opposing_points to $picking_points";
-        }
-        
+        $new_scores = $this->updateScores($player_points);
         // Check for end of game
         self::incStat(1, 'handsPlayed'); 
         $num_hands = max(self::getStat('handsPlayed'), 1);  // making sure no div by zero
-        $end_of_game = $this->isEndOfGame($num_hands);
-        if ($end_of_game){
-            $this->gamestate->nextState("endGame");
-        }
-        else{
-            $this->gamestate->nextState("nextHand");        
-            $this->notifyAllPlayers("tableWindow", '', array(
-                "id" => 'Scoring',
-                "title" => clienttranslate("Hand Result"),
-                "header" => array(
-                    'str' => clienttranslate('${team} team wins ${score_str}'),
-                    'args' => [ 
-                        'team' => $winning_team,
-                        'score_str' => $score_str,
-                    ],
-                ),
-                "table" => $table,
-                "closing" => clienttranslate("Next Hand")
-            )); 
-        }  
-        foreach ($players as $player_id => $player) {
+        foreach ($player_points as $player_id => $points) {
             self::incStat($player_hand_points[$player_id], 'totalPointsEarned', $player_id);
-            if ($winning_team == "Picking" && ($player_id == $picker_id || $player_id == $partner_id)) {
-                self::incStat(1, 'totalHandsWon', $player_id);
-            }
-            if ($winning_team != "Picking" && $player_id != $picker_id && $player_id != $partner_id) {
+            if ($points > 0) {
                 self::incStat(1, 'totalHandsWon', $player_id);
             }
             $hands_won = self::getStat('totalHandsWon', $player_id);
@@ -979,6 +1018,18 @@ class Sheepshead extends Table
             $sql = "UPDATE player SET player_score_aux=player_score_aux+$hands_won  WHERE player_id='$player_id'";
             self::DbQuery($sql);
         }
+        // display scores
+        $this->display_score_dialog($new_scores);
+        // Reset special rules
+        self::setGameStateValue('leaster', 0);
+        self::setGameStateValue('doublers', 0);
+        $end_of_game = $this->isEndOfGame($num_hands); 
+        if ($end_of_game){
+            $this->gamestate->nextState("endGame");
+        }
+        else{
+            $this->gamestate->nextState("nextHand");     
+        } 
     }
 
 //////////////////////////////////////////////////////////////////////////////
