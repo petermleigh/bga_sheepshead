@@ -21,13 +21,9 @@
 </div>
 <div id="card_help">
     <a href="#" id="toggle_help" class="expandabletoggle expandablearrow">
-        <div class="icon20"></div>
+        Show Help <div class="icon20"></div>
     </a>
-    <div id="help_hidden" class="expandablecontent">
-        Trump Strength: Q♣ Q♠ Q♥ Q♦ J♣ J♠ J♥ J♦ A♦ 10♦ K♦ 9♦ 8♦ 7♦ <br>
-        Other Suit Strength: A 10 K 9 8 7 <br>
-        Card Points: A-11, 10-10, K-4, Q-3, J-2
-    </div>
+    <div id="help_hidden" class="expandablecontent whiteblock">{HELP}</div>
 </div>
 <div id="myhand_wrap" class="whiteblock">
     <h3>{MY_HAND}</h3>
@@ -44,6 +40,7 @@ var jstpl_cardontable = '<div class="cardontable" id="cardontable_${player_id}" 
 
 var jstpl_token = '<div class="playertoken" id="playertoken_${token_id}" style="background-position:-${x}px -${y}px">\
                    </div>';
+
 </script>  
 
 {OVERALL_GAME_FOOTER}

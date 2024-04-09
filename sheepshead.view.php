@@ -57,6 +57,39 @@ class view_sheepshead_sheepshead extends game_view
         }
         // this will make our My Hand text translatable
         $this->tpl['MY_HAND'] = self::_("My hand");
+        $trump_str = self::_("Trump Strength");
+        $other_str = self::_("Other Suit Strength");
+        
+        $this->tpl['HELP'] = self::raw("
+            $trump_str: Q♣ Q♠ <span style='color: red'>Q♥ Q♦</span> J♣ J♠ <span style='color: red'>J♥ J♦ A♦ 10♦ K♦ 9♦ 8♦ 7♦ </span><br><br>
+            $other_str: A 10 K 9 8 7 <br><br>
+            <table>
+                <tr>
+                    <th class='help_table'>Card</th>
+                    <th class='help_table'>Points</th>
+                </tr>
+                <tr>
+                    <td>A</td>
+                    <td>11</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td>K</td>
+                    <td>4</td>
+                </tr>
+                <tr>
+                    <td>Q</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td>J</td>
+                    <td>2</td>
+                </tr>
+            </table>"
+        );
         
         /*********** Do not change anything below this line  ************/
   	}

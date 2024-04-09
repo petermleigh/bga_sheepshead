@@ -41,6 +41,7 @@ class Sheepshead extends Table
 
         $this->cards = self::getNew("module.common.deck");
         $this->cards->init("card");  
+        $this->tricks = array();
 	}
 	
     protected function getGameName()
@@ -63,6 +64,8 @@ class Sheepshead extends Table
         // The number of colors defined here must correspond to the maximum number of players allowed for the gams
         $gameinfos = self::getGameinfos();
         $default_colors = $gameinfos['player_colors'];
+        
+        $this->tricks = array();
  
         // Create players
         // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
@@ -192,6 +195,7 @@ class Sheepshead extends Table
                 'token_name' => $this->token['revealedPartner']['nametr'],
             ),
         );
+        $result['tricks'] = $this->tricks;
 
 
         return $result;
@@ -298,19 +302,56 @@ class Sheepshead extends Table
         $best_value_player_id = null;
         $currentTrickSuit = self::getGameStateValue('trickSuit');
         foreach ($cards_on_table as $card) {
-            // Note: type = card suit
             $card_rank = $card['type_arg'];
             $card_suit = $card['type'];
             $card_power = $this->cardPower[$card_suit][$card_rank];
 
             if ($card_suit == $currentTrickSuit || $this->isTrump($card)) {
                 if ($best_value_player_id === null || $card_power > $best_value) {
-                    $best_value_player_id = $card['location_arg']; // location_arg = player who played this card on table
+                    $best_value_player_id = $card['location_arg'];
                     $best_value = $card_power;
                 }
             }
         }
+        $this->tricks[] = array(
+            'winner' => $best_value_player_id,
+            'cards' => $cards_on_table,
+        );
         return $best_value_player_id;
+    }
+
+    function takeTrick($cards_on_table) {
+        // This is the end of the trick
+        // Move all cards to "cardswon" of the given player
+        $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
+        $best_value_player_id = $this->getTrickWinner($cards_on_table);
+        self::incStat(1, 'totalTricksTaken', $best_value_player_id);    
+        
+        // Active this player => he's the one who starts the next trick
+        $this->gamestate->changeActivePlayer($best_value_player_id);
+        
+        // Move all cards to "cardswon" of the given player
+        $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
+
+        // Notify
+        $players = self::loadPlayersBasicInfos();
+        self::notifyAllPlayers(
+            'trickWin', 
+            clienttranslate('${player_name} wins the trick'), 
+            array(
+                'player_id' => $best_value_player_id,
+                'player_name' => $players[ $best_value_player_id ]['player_name'],
+                'last_trick' => $cards_on_table,
+            ) 
+        );            
+        self::notifyAllPlayers(
+            'giveAllCardsToPlayer',
+            '', 
+            array(
+                'player_id' => $best_value_player_id
+            ) 
+        );   
+        return $best_value_player_id; 
     }
 
     function calcHandPoints($players) {
@@ -894,6 +935,14 @@ class Sheepshead extends Table
         // update partner caard info
         $partner_card_uni = $this->getCardStr($this->getCardFromNo($partner_card));
         self::notifyAllPlayers(
+            'playerPicked', 
+            clienttranslate('${player_name} picked'), 
+            array (
+                'player_id' => $picker_id,
+                'player_name' => self::getPlayerNameById($picker_id),
+            )
+        );
+        self::notifyAllPlayers(
             'partnerCardChosen', 
             clienttranslate('Partner card is ${partner_card_uni}'), 
             array (
@@ -953,32 +1002,7 @@ class Sheepshead extends Table
             // This is the end of the trick
             // Move all cards to "cardswon" of the given player
             $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
-            $best_value_player_id = $this->getTrickWinner($cards_on_table);
-            self::incStat(1, 'totalTricksTaken', $best_value_player_id);    
-            
-            // Active this player => he's the one who starts the next trick
-            $this->gamestate->changeActivePlayer($best_value_player_id);
-            
-            // Move all cards to "cardswon" of the given player
-            $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
-
-            // Notify
-            $players = self::loadPlayersBasicInfos();
-            self::notifyAllPlayers(
-                'trickWin', 
-                clienttranslate('${player_name} wins the trick'), 
-                array(
-                    'player_id' => $best_value_player_id,
-                    'player_name' => $players[ $best_value_player_id ]['player_name']
-                ) 
-            );            
-            self::notifyAllPlayers(
-                'giveAllCardsToPlayer',
-                '', 
-                array(
-                    'player_id' => $best_value_player_id
-                ) 
-            );    
+            $best_value_player_id = $this->takeTrick($cards_on_table); 
             if ($this->cards->countCardInLocation('hand') == 0) {
                 // End of the hand
                 if (self::getGameStateValue('leaster')) {
