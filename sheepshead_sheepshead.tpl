@@ -20,8 +20,8 @@
     </div>
 </div>
 <div id="card_help">
-    <a href="#" id="toggle_help" class="expandabletoggle expandablearrow">
-        Show Help <div class="icon20"></div>
+    <a href="#" id="toggle_help_button" class="bgabutton bgabutton_blue expandabletoggle expandablearrow">
+        {HELP_STR}<div class="icon20"></div>
     </a>
     <div id="help_hidden" class="expandablecontent whiteblock">{HELP}</div>
 </div>

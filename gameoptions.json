@@ -106,6 +106,26 @@
             }
         },
         "default": 1
+    },
+    "140": {
+        "name": "Show Cards in Game Log",
+        "description": "Shows all played cards in the game log",
+        "values": {
+            "1": {
+                "name": "On"
+            },
+            "2": {
+                "name": "Off"
+            }
+        },
+        "displaycondition": [
+            {
+            "type": "otheroptionisnot",
+            "id": 200,
+            "value": [0, 1, 2]
+            }
+        ],
+        "default": 2
     }
     
 }

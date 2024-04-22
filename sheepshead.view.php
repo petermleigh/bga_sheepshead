@@ -59,14 +59,17 @@ class view_sheepshead_sheepshead extends game_view
         $this->tpl['MY_HAND'] = self::_("My hand");
         $trump_str = self::_("Trump Strength");
         $other_str = self::_("Other Suit Strength");
+        $card_str = self::_('Card');
+        $points_str = self::_('Points');
         
+        $this->tpl['HELP_STR'] = self::_("Toggle Help");
         $this->tpl['HELP'] = self::raw("
             $trump_str: Q♣ Q♠ <span style='color: red'>Q♥ Q♦</span> J♣ J♠ <span style='color: red'>J♥ J♦ A♦ 10♦ K♦ 9♦ 8♦ 7♦ </span><br><br>
             $other_str: A 10 K 9 8 7 <br><br>
             <table>
                 <tr>
-                    <th class='help_table'>Card</th>
-                    <th class='help_table'>Points</th>
+                    <th class='help_table'>$card_str</th>
+                    <th class='help_table'>$points_str</th>
                 </tr>
                 <tr>
                     <td>A</td>

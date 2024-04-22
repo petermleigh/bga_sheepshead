@@ -15,6 +15,7 @@ require_once(APP_GAMEMODULE_PATH.'module/table/table.game.php');
 
 class Sheepshead extends Table
 {
+
 	function __construct( )
 	{
         parent::__construct();
@@ -36,12 +37,12 @@ class Sheepshead extends Table
                 "mustHaveSuit" => 122,
                 "pickTens" => 123,
                 "noPicker" => 130,
+                "cardLog" => 140,
             ) 
         );
 
         $this->cards = self::getNew("module.common.deck");
         $this->cards->init("card");  
-        $this->tricks = array();
 	}
 	
     protected function getGameName()
@@ -64,9 +65,7 @@ class Sheepshead extends Table
         // The number of colors defined here must correspond to the maximum number of players allowed for the gams
         $gameinfos = self::getGameinfos();
         $default_colors = $gameinfos['player_colors'];
-        
-        $this->tricks = array();
- 
+         
         // Create players
         // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
         $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
@@ -195,8 +194,6 @@ class Sheepshead extends Table
                 'token_name' => $this->token['revealedPartner']['nametr'],
             ),
         );
-        $result['tricks'] = $this->tricks;
-
 
         return $result;
     }
@@ -246,6 +243,17 @@ class Sheepshead extends Table
 
     function getCardStr($card) {
         return $this->rank[$card['type_arg']] . $this->suit[$card['type']]['uni'];
+    }
+
+    function getCardStrHTML($card) {
+        $card_str = $this->getCardStr($card);
+        if ($card['type'] == 2 || $card['type'] == 4) {
+            $color = "red";
+        }
+        else {
+            $color = "black";
+        }
+        return "<span style='color: $color'>$card_str</span>";
     }
 
     function isTrump($card) {
@@ -305,7 +313,6 @@ class Sheepshead extends Table
             $card_rank = $card['type_arg'];
             $card_suit = $card['type'];
             $card_power = $this->cardPower[$card_suit][$card_rank];
-
             if ($card_suit == $currentTrickSuit || $this->isTrump($card)) {
                 if ($best_value_player_id === null || $card_power > $best_value) {
                     $best_value_player_id = $card['location_arg'];
@@ -313,10 +320,6 @@ class Sheepshead extends Table
                 }
             }
         }
-        $this->tricks[] = array(
-            'winner' => $best_value_player_id,
-            'cards' => $cards_on_table,
-        );
         return $best_value_player_id;
     }
 
@@ -341,7 +344,6 @@ class Sheepshead extends Table
             array(
                 'player_id' => $best_value_player_id,
                 'player_name' => $players[ $best_value_player_id ]['player_name'],
-                'last_trick' => $cards_on_table,
             ) 
         );            
         self::notifyAllPlayers(
@@ -715,9 +717,15 @@ class Sheepshead extends Table
             self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
         $trick_suit_str = $this->suit[self::getGameStateValue('trickSuit')]['uni'];
+        if (self::getGameStateValue('cardLog') == 1) {
+            $play_log = '${player_name} played ${card_str_html}';
+        }
+        else {
+            $play_log = '';
+        }
         self::notifyAllPlayers(
             'playCard', 
-            '', 
+            $play_log, 
             array(
                 'i18n' => array('card_uni'),
                 'card_id' => $card_id,
@@ -725,7 +733,7 @@ class Sheepshead extends Table
                 'player_name' => self::getActivePlayerName(),
                 'value' => $currentCard['type_arg'],
                 'suit' => $currentCard['type'], 
-                'card_str' => $this->getCardStr($currentCard),
+                'card_str_html' => $this->getCardStrHTML($currentCard),
                 'trick_suit_str' => "Current Trick Suit<br>$trick_suit_str",
             )
         );

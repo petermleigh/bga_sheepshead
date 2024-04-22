@@ -78,7 +78,7 @@ function (dojo, declare) {
             $("points_details").innerHTML = this.getPointsSpanStr(this.gamedatas.leaster, this.gamedatas.doublers);
 
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
-
+            
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
         },
@@ -183,9 +183,9 @@ function (dojo, declare) {
                     weight = weight + value - 3;
                     break;
                 default:
-                    weight = weight + value
+                    weight = weight + value;
             }
-            return 85 - weight // reverse it
+            return 85 - weight; // reverse it
         },
         
         getCardTypeId: function(suit, value) {
@@ -229,7 +229,7 @@ function (dojo, declare) {
             this.slideToObjectPos('playertoken_' + token_id, 'playertokens_' + player_id, 0, height_offset).play();
         },
 
-        playCardOnTable : function(player_id, suit, value, card_id) {
+        createCard : function(player_id, suit, value) {
             // player_id => direction
             dojo.place(
                 this.format_block(
@@ -237,28 +237,32 @@ function (dojo, declare) {
                     {
                         x : this.cardwidth * (value - 2),
                         y : this.cardheight * (suit - 1),
-                        player_id : player_id
+                        player_id : player_id,
                     }
                 ), 
                 'playertablecard_' + player_id
             );
+            return 'cardontable_' + player_id;
+        },
 
+        playCardOnTable : function(player_id, suit, value, card_id) {
+            var card_element = this.createCard(player_id, suit, value);
             if (player_id != this.player_id) {
                 // Some opponent played a card
                 // Move card from player panel
-                this.placeOnObject('cardontable_' + player_id, 'overall_player_board_' + player_id);
+                this.placeOnObject(card_element, 'overall_player_board_' + player_id);
             } else {
                 // You played a card. If it exists in your hand, move card from there and remove
                 // corresponding item
 
                 if ($('myhand_item_' + card_id)) {
-                    this.placeOnObject('cardontable_' + player_id, 'myhand_item_' + card_id);
+                    this.placeOnObject(card_element, 'myhand_item_' + card_id);
                     this.playerHand.removeFromStockById(card_id);
                 }
             }
 
             // In any case: move it to its final destination
-            this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
+            this.slideToObject(card_element, 'playertablecard_' + player_id).play();
         },
 
         ajaxcallwrapper: function(action, args, handler) {
