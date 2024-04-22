@@ -151,8 +151,8 @@ class Sheepshead extends Table
         $result = array();
     
         $current_player_id = self::getCurrentPlayerId();
-        $partner_card_str = $this->getCardStr($this->getCardFromNo(self::getGameStateValue('partnerCard')));
-        $trick_suit_str = $this->suit[self::getGameStateValue('trickSuit')]['uni'];
+        $partner_card_str = $this->getCardStrHTML($this->getCardFromNo(self::getGameStateValue('partnerCard')));
+        $trick_suit_str = $this->getTrickSuitStrHTML(self::getGameStateValue('trickSuit'));
     
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
@@ -241,19 +241,23 @@ class Sheepshead extends Table
         return ($card['type'] - 1) * 13 + ($card['type_arg'] - 2);
     }
 
-    function getCardStr($card) {
-        return $this->rank[$card['type_arg']] . $this->suit[$card['type']]['uni'];
+    function getSuitColor($suit) {
+        if ($suit == 2 || $suit == 4) {
+            return "red";
+        }
+        return "black";
     }
 
     function getCardStrHTML($card) {
-        $card_str = $this->getCardStr($card);
-        if ($card['type'] == 2 || $card['type'] == 4) {
-            $color = "red";
-        }
-        else {
-            $color = "black";
-        }
-        return "<span style='color: $color'>$card_str</span>";
+        $card_str = $this->rank[$card['type_arg']] . $this->suit[$card['type']]['uni'];
+        $color = $this->getSuitColor($card['type']);
+        return "<span style='color: $color; font-weight: bold'>$card_str</span>";
+    }
+
+    function getTrickSuitStrHTML($trick_suit) {
+        $color = $this->getSuitColor($trick_suit);
+        $suit_str = $this->suit[$trick_suit]['uni'];
+        return "<span style='color: $color; font-weight: bold'>$suit_str</span>";
     }
 
     function isTrump($card) {
@@ -502,15 +506,15 @@ class Sheepshead extends Table
         $available_cards = array(
             1 => array(
                 'card_no' => $this->getNofromCard(array('type' => 1, 'type_arg' => $card_type_arg)), 
-                'card_str' => $this->getCardStr(array('type' => 1, 'type_arg' => $card_type_arg)) 
+                'card_str' => $this->getCardStrHTML(array('type' => 1, 'type_arg' => $card_type_arg)) 
             ),
             2 => array(
                 'card_no' => $this->getNofromCard(array('type' => 2, 'type_arg' => $card_type_arg)), 
-                'card_str' => $this->getCardStr(array('type' => 2, 'type_arg' => $card_type_arg)) 
+                'card_str' => $this->getCardStrHTML(array('type' => 2, 'type_arg' => $card_type_arg)) 
             ),  
             3 => array(
                 'card_no' => $this->getNofromCard(array('type' => 3, 'type_arg' => $card_type_arg)), 
-                'card_str' => $this->getCardStr(array('type' => 3, 'type_arg' => $card_type_arg))
+                'card_str' => $this->getCardStrHTML(array('type' => 3, 'type_arg' => $card_type_arg))
             ),  
         );
         $suits = array();
@@ -716,7 +720,7 @@ class Sheepshead extends Table
         if (self::getGameStateValue('trickSuit') == 0) {
             self::setGameStateValue('trickSuit', $this->getCardSuit($currentCard));
         }
-        $trick_suit_str = $this->suit[self::getGameStateValue('trickSuit')]['uni'];
+        $trick_suit_str = $this->getTrickSuitStrHTML(self::getGameStateValue('trickSuit'));
         if (self::getGameStateValue('cardLog') == 1) {
             $play_log = '${player_name} played ${card_str_html}';
         }
@@ -778,7 +782,7 @@ class Sheepshead extends Table
         // Set default partner card: Jack of Diamods (4-1)*13 + (11-2)=
         $partner_card = self::getGameStateValue('defaultPartnerCard');
         self::setGameStateValue('partnerCard', $partner_card);
-        $partner_card_str = $this->getCardStr($this->getCardFromNo($partner_card));
+        $partner_card_str = $this->getCardStrHTML($this->getCardFromNo($partner_card));
         self::notifyAllPlayers(
             'partnerCardChosen', 
             '', 
@@ -941,7 +945,7 @@ class Sheepshead extends Table
         $leader_id = self::getPlayerAfter($dealer_id);
         $this->gamestate->changeActivePlayer($leader_id);
         // update partner caard info
-        $partner_card_uni = $this->getCardStr($this->getCardFromNo($partner_card));
+        $partner_card_uni = $this->getCardStrHTML($this->getCardFromNo($partner_card));
         self::notifyAllPlayers(
             'playerPicked', 
             clienttranslate('${player_name} picked'), 

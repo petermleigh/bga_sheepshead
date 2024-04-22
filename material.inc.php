@@ -40,7 +40,7 @@ $this->suit = array(
   2 => array( 
     'name' => clienttranslate('heart'),
     'nametr' => self::_('heart'),
-    'uni' => '♡',
+    'uni' => '♥',
   ),
   3 => array(
     'name' => clienttranslate('club'),
@@ -50,7 +50,7 @@ $this->suit = array(
   4 => array(
     'name' => clienttranslate('diamond'),
     'nametr' => self::_('diamond'),
-    'uni' => '♢',
+    'uni' => '♦',
   ),
 );
 
