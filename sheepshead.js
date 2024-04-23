@@ -9,7 +9,9 @@
  */
 
 define([
-    "dojo","dojo/_base/declare",
+    "dojo",
+    "dojo/_base/declare",
+    "dojo/dom-style",
     "ebg/core/gamegui",
     "ebg/counter",
     "ebg/stock",
@@ -18,14 +20,14 @@ define([
 function (dojo, declare) {
     return declare("bgagame.sheepshead", ebg.core.gamegui, {
         constructor: function(){
-            this.cardwidth = 72;
-            this.cardheight = 96;
+            this.cardwidth = 216;
+            this.cardheight = 336;
             this.tokenwidth = 30;
             this.tokenheight = 30;
         },
         
         setup: function( gamedatas )
-        {         
+        {     
             // Help Expandable
             this.expanded = new ebg.expandablesection();
             this.expanded.create(this, "card_help");
@@ -34,19 +36,26 @@ function (dojo, declare) {
             // Player hand
             this.playerHand = new ebg.stock(); // new stock object for hand
             this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
-            this.playerHand.image_items_per_row = 13; // 13 images per row
-            
+
+            this.playerHand.image_items_per_row = 8; 
+            this.playerHand.centerItems = true;
+            this.playerHand.autowidth = true;
+               
+            var card_uri = g_gamethemeurl + 'img/base.png';
+            if (this.prefs[100].value == 2) {
+                card_uri = g_gamethemeurl + 'img/alt.png';
+            }
             weights = {}
             // Create cards types:
             for (var suit = 1; suit <= 4; suit++) {
-                for (var value = 2; value <= 14; value++) {
+                for (var value = 7; value <= 14; value++) {
                     // Build card type id
                     var card_type_id = this.getCardTypeId(suit, value);
-                    weights[card_type_id] = this.getCardWeight(suit, value);
-                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
+                    var card_image_pos = this.getCardImagePos(suit, value);
+                    this.playerHand.addItemType(card_type_id, this.getCardWeight(suit, value), card_uri, card_image_pos);
                 }
             }
-            this.playerHand.changeItemsWeight(weights);
+            this.playerHand.resizeItems(this.cardwidth / 3, this.cardheight / 3, 576, 448);
 
             // Cards in player's hand
             for ( var i in this.gamedatas.hand) {
@@ -79,6 +88,8 @@ function (dojo, declare) {
 
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
             
+            this.showPlayable(this.gamedatas.playable_card_ids);
+
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
         },
@@ -192,6 +203,10 @@ function (dojo, declare) {
             return (suit - 1) * 13 + (value - 2);
         },
 
+        getCardImagePos: function(suit, value) {
+            return (suit - 1) * 8 + (value - 7);
+        },
+
         getPointsSpanStr: function(leaster, doublers) {
             if (leaster == 1){
                 return  "Leaster Hand";
@@ -200,6 +215,25 @@ function (dojo, declare) {
                 return doublers * 2 + "x Points";
             }
             return "";
+        },
+
+        showPlayable : function(playable_card_ids) {            
+            if (this.prefs[101].value == 2) {
+                return;
+            }
+            var hand = this.playerHand.getAllItems();
+            for (var i in hand) {
+                var card = hand[i]
+                var card_div = $(this.playerHand.getItemDivId(card.id));
+                dojo.removeClass(card_div, 'playable_card');
+                dojo.addClass(card_div, 'unplayable_card');
+            }
+            for (var i in playable_card_ids) {
+                var card_no = playable_card_ids[i];
+                var card_div = $(this.playerHand.getItemDivId(card_no));
+                dojo.removeClass(card_div, 'unplayable_card');
+                dojo.addClass(card_div, 'playable_card');
+            }
         },
 
         placeToken : function(player_id, token_id) {
@@ -229,14 +263,18 @@ function (dojo, declare) {
             this.slideToObjectPos('playertoken_' + token_id, 'playertokens_' + player_id, 0, height_offset).play();
         },
 
-        createCard : function(player_id, suit, value) {
-            // player_id => direction
+        createCard : function(player_id, suit, value) {   
+            var css_class = "cardontable";         
+            if (this.prefs[100].value == 2) {
+                css_class = "cardontable_alt";         
+            }
             dojo.place(
                 this.format_block(
                     'jstpl_cardontable', 
                     {
-                        x : this.cardwidth * (value - 2),
-                        y : this.cardheight * (suit - 1),
+                        x : (value - 7) * 100,
+                        y : (suit - 1) * 100,
+                        class: css_class,
                         player_id : player_id,
                     }
                 ), 
@@ -258,6 +296,7 @@ function (dojo, declare) {
                 if ($('myhand_item_' + card_id)) {
                     this.placeOnObject(card_element, 'myhand_item_' + card_id);
                     this.playerHand.removeFromStockById(card_id);
+                    this.showPlayable();
                 }
             }
 
@@ -338,6 +377,7 @@ function (dojo, declare) {
             dojo.subscribe('newScores', this, "notif_newScores");
             dojo.subscribe('doublers', this, "notif_setDoublers");
             dojo.subscribe('leaster', this, "notif_setLeaster");
+            dojo.subscribe('nextPlayer', this, "notif_nextPlayer");
  
             this.notifqueue.setSynchronous( 'trickWin', 1000 );
 
@@ -411,6 +451,10 @@ function (dojo, declare) {
         notif_setLeaster : function(notif) {
             $("points_details").innerHTML = this.getPointsSpanStr(notif.args.leaster, null);  
             $("partner_card").innerHTML = "";        
+        },
+
+        notif_nextPlayer : function(notif) {
+            this.showPlayable(notif.args.playable_card_ids);
         },
    });             
 });

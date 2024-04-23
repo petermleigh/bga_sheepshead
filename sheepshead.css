@@ -26,8 +26,19 @@
 .cardontable {
     position: absolute;
     width: 72px;
-    height: 96px;
-    background-image: url('img/cards.jpg'); 
+    height: 112px;
+    background-size: 576px 448px;
+    background-image: url('img/base.png');
+    box-shadow: 3px 3px 3px #000000a0;
+}
+
+.cardontable_alt {
+    position: absolute;
+    width: 72px;
+    height: 112px;
+    background-size: 576px 448px;
+    background-image: url('img/alt.png');
+    box-shadow: 3px 3px 3px #000000a0;
 }
 
 .playertablecard {
@@ -35,19 +46,44 @@
     position: relative;
     left: -15px;
     width: 72px;
-    height: 96px;
+    height: 112px;
 }
 
 #playertables {
     position: relative;
-    width: 710px;
-    height: 340px;
+    width: 800px;
+    height: 400px;
     margin: 0 auto;
+    background-image: radial-gradient(darkgreen, rgb(0, 61, 0));
+    border-radius: 25px;
 }
+
+#myhand_wrap {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
 #myhand {
     position: relative;
     width: 710px;
-    margin: 0 auto;
+    margin: 0;
+}
+
+.unplayable_card {
+    -webkit-filter: grayscale(100%);
+       -moz-filter: grayscale(100%);
+         -o-filter: grayscale(100%);
+        -ms-filter: grayscale(100%);
+            filter: grayscale(100%);
+            filter: contrast(50%);
+}
+
+.playable_card {
+    -webkit-filter: grayscale(0%);
+       -moz-filter: grayscale(0%);
+         -o-filter: grayscale(0%);
+        -ms-filter: grayscale(0%);
+            filter: grayscale(0%);
 }
 
 .help_table {
@@ -55,10 +91,16 @@
     padding-right: 10px;
     padding-bottom: 5px;
     padding-top: 0px;
+    margin: auto;
 }
 
 .playertablename {
     font-weight: bold;
+    top: 0px;
+    padding: 5px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    background-blend-mode: lighten;
 }
 
 .playertable {
@@ -66,31 +108,45 @@
     text-align: center;
     width: 180px;
     height: 130px;
+    padding: 20px;
+    border-width: 2px;
+    border-radius: 25px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.2);
 }
 
 .playertable_NE {
-    right: 0px;
-    top: 0px;
+    right: 20px;
+    top: 20px;
 }
 .playertable_SE {
-    right: 0px;
-    bottom: 0px;
+    right: 20px;
+    bottom: 20px;
 }
 .playertable_NW {
-    left: 0px;
-    top: 0px;
+    left: 20px;
+    top: 20px;
 }
 .playertable_SW {
-    left: 0px;
-    bottom: 0px;
+    left: 20px;
+    bottom: 20px;
 }
 .playertable_S {
     left: 50%;
     margin-left: -90px;
-    bottom: 0px;
+    bottom: 20px;
 }
 .playertable_info {
+    position: absolute;
+    text-align: center;
+    width: 180px;
+    height: 130px;
+    padding: 20px;
     left: 50%;
     margin-left: -90px;
-    top: 0px;
+    top: 20px;
+}
+.info_block{
+    margin: 0 auto;
+    padding: 5px;
 }

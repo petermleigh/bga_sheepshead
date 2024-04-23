@@ -161,7 +161,8 @@ class Sheepshead extends Table
         
 
         // Cards in player hand
-        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
+        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);        
+        $result['playable_card_ids'] = $this->getPlayableCardIds($current_player_id);
         
         // Cards played on the table
         $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
@@ -300,6 +301,17 @@ class Sheepshead extends Table
         }
         // all cards are not in trick suit so player can play whatever they want
         return true;
+    }
+
+    function getPlayableCardIds($player_id) {
+        $playable_card_ids = array();
+        $cards_in_hand = $this->cards->getCardsInLocation('hand', $player_id);
+        foreach($cards_in_hand as $card) {
+            if ($this->isCardPlayable($card, $player_id)) {
+                $playable_card_ids[] = $card['id'];
+            }
+        }
+        return $playable_card_ids;
     }
 
     function getCardSuit($card) {
@@ -1025,15 +1037,34 @@ class Sheepshead extends Table
             } else {
                 // End of the trick
                 $this->gamestate->nextState("nextTrick");
-            }
+            }          
+            $playable_card_ids = $this->getPlayableCardIds($best_value_player_id);  
+            self::notifyPlayer(
+                $best_value_player_id, 
+                'nextPlayer', 
+                '',
+                array(
+                    'player_id' => $best_value_player_id,
+                    'playable_card_ids' => $playable_card_ids,
+                )
+            );
         } else {
             // Standard case (not the end of the trick)
             // => just active the next player
             $player_id = self::activeNextPlayer();
             self::giveExtraTime($player_id);
             $this->gamestate->nextState('nextPlayer');
-        }
-        
+            $playable_card_ids = $this->getPlayableCardIds($player_id);
+            self::notifyPlayer(
+                $player_id, 
+                'nextPlayer', 
+                '',
+                array(
+                    'player_id' => $player_id,
+                    'playable_card_ids' => $playable_card_ids,
+                )
+            );
+        }        
     }
 
     function stEndHand() {

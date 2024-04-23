@@ -1,15 +1,12 @@
-features to add before beta:
-    Center table and cards
-    add trick count per player
+fix layout on player position
 
-    game options:
-        blitzing and cracking
+add trick / point count per player
 
-features to add before release:
-    better card graphics
-        https://github.com/thoun/bga-cards/tree/main/demo
-        grey out / offset unplayable cards
-        option to confirm play
-    other player number game options (start with 3, 4, 6 and 7):
-        https://www.sheepshead.org/rules/sheepshead-variations/
-        Play for "money" > 1 round and allow people to leave without penalty
+game options:
+    blitzing and cracking
+
+option to confirm play
+    
+other player number game options (start with 3, 4, 6 and 7):
+    https://www.sheepshead.org/rules/sheepshead-variations/
+    Play for "money" > 1 round and allow people to leave without penalty

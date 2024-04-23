@@ -1,1 +1,30 @@
-{}
+{
+    "100": {
+        "name": "Suit Colors",
+        "needReload": true,
+        "values": {
+            "1": {
+                "name": "Normal"
+            },
+            "2": {
+                "name": "Blue Trump"
+            }
+        },
+        "default": 1
+    },
+    "101": {
+        "name": "Grey Out Unplayable Cards",
+        "needReload": true,
+        "values": {
+            "1": {
+                "name": "On"
+            },
+            "2": {
+                "name": "Off"
+            }
+        },
+        "default": 1
+    }
+}
+        
+        
