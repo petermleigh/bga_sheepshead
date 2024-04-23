@@ -157,7 +157,8 @@ class Sheepshead extends Table
         // Get information about players
         // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
         $sql = "SELECT player_id id, player_score score FROM player ";
-        $result['players'] = self::getCollectionFromDb($sql);
+        $players = self::getCollectionFromDb($sql);
+        $result['players'] = $players;
         
 
         // Cards in player hand
@@ -195,6 +196,18 @@ class Sheepshead extends Table
                 'token_name' => $this->token['revealedPartner']['nametr'],
             ),
         );
+        
+        $player_hand_points = $this->calcHandPoints($players);
+        $player_points = $this->calcPoints($player_hand_points);
+
+        $trick_counters = array();
+        $point_counters = array();
+        foreach ($players as $player_id => $player) {
+            $trick_counters[$player_id] = $this->getTricksTaken($player_id);
+            $point_counters[$player_id] = $player_points[$player_id];
+        }
+        $result['trick_counters'] = $trick_counters;
+        $result['point_counters'] = $point_counters;
 
         return $result;
     }
@@ -339,6 +352,10 @@ class Sheepshead extends Table
         return $best_value_player_id;
     }
 
+    function getTricksTaken($player_id) {        
+        return intdiv($this->cards->countCardInLocation('cardswon', $player_id), self::getPlayersNumber());
+    }
+
     function takeTrick($cards_on_table) {
         // This is the end of the trick
         // Move all cards to "cardswon" of the given player
@@ -350,16 +367,19 @@ class Sheepshead extends Table
         $this->gamestate->changeActivePlayer($best_value_player_id);
         
         // Move all cards to "cardswon" of the given player
+        $points = $this->calcCardPoints($cards_on_table);
         $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
 
         // Notify
         $players = self::loadPlayersBasicInfos();
+        
         self::notifyAllPlayers(
             'trickWin', 
             clienttranslate('${player_name} wins the trick'), 
             array(
                 'player_id' => $best_value_player_id,
                 'player_name' => $players[ $best_value_player_id ]['player_name'],
+                'point_inc' => $points,
             ) 
         );            
         self::notifyAllPlayers(
@@ -370,6 +390,16 @@ class Sheepshead extends Table
             ) 
         );   
         return $best_value_player_id; 
+    }
+    
+    function calcCardPoints($cards) {
+        $points = 0;
+        foreach ($cards as $card) {
+            if (array_key_exists($card ['type_arg'], $this->points)) {
+                $points += $this->points[$card['type_arg']];
+            }
+        }
+        return $points;
     }
 
     function calcHandPoints($players) {
@@ -382,7 +412,7 @@ class Sheepshead extends Table
         foreach ($cards as $card) {
             $player_id = $card ['location_arg'];
             if (array_key_exists($card ['type_arg'], $this->points)) {
-                $player_hand_points[$player_id] += $this->points[$card ['type_arg']];
+                $player_hand_points[$player_id] += $this->points[$card['type_arg']];
             }
         }
         return $player_hand_points;
@@ -621,7 +651,7 @@ class Sheepshead extends Table
                 $team,
                 $player_points[$player_id],
                 $new_scores[$player_id],
-                intdiv($this->cards->countCardInLocation('cardswon', $player_id), self::getPlayersNumber()),
+                $this->getTricksTaken($player_id),
             );
             if ($leaster) {
                 if ($player_points[$player_id] > 0) {

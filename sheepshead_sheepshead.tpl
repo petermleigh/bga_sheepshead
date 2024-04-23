@@ -21,6 +21,7 @@
     <div id="myhand">
     </div>
 </div>
+
 <div id="card_help" style="text-align: center">
     <a href="#" id="toggle_help_button" class="bgabutton bgabutton_gray expandabletoggle expandablearrow">
         {HELP_STR}<div class="icon20"></div>
@@ -37,6 +38,10 @@ var jstpl_cardontable = '<div class="${class}" id="cardontable_${player_id}" sty
 
 var jstpl_token = '<div class="playertoken" id="playertoken_${token_id}" style="background-position:-${x}px -${y}px">\
                    </div>';
+
+var jstpl_player_board = '\<div class="cp_board">\
+    <span>Tricks Taken: <span id="trick_counter_${id}">0</span></span>\
+</div>';
 
 </script>  
 

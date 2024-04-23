@@ -28,6 +28,21 @@ function (dojo, declare) {
         
         setup: function( gamedatas )
         {     
+            this.trick_counters = {};
+            this.point_counters = {};
+            for (var player_id in this.gamedatas.players)
+            {
+                var player = gamedatas.players[player_id];                         
+                // Setting up players boards if needed
+                var player_board_div = $('player_board_' + player_id);
+                dojo.place(this.format_block('jstpl_player_board', player), player_board_div);
+
+                var trick_counter = new ebg.counter();
+                trick_counter.create('trick_counter_'+player_id);
+                trick_counter.setValue(this.gamedatas.trick_counters[player_id]);
+                this.trick_counters[player_id] = trick_counter;
+            }
+
             // Help Expandable
             this.expanded = new ebg.expandablesection();
             this.expanded.create(this, "card_help");
@@ -418,6 +433,7 @@ function (dojo, declare) {
 
         notif_trickWin : function(notif) {
             $("current_trick").innerHTML = "";
+            this.trick_counters[notif.args.player_id].incValue(1);
         },
 
         notif_giveAllCardsToPlayer : function(notif) {
@@ -441,6 +457,7 @@ function (dojo, declare) {
             // Update players' scores
             for ( var player_id in notif.args.newScores) {
                 this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
+                this.trick_counters[player_id].toValue(0);
             }
         },
 
