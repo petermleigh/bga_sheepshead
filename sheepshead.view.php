@@ -60,6 +60,11 @@ class view_sheepshead_sheepshead extends game_view
         $other_str = self::_("Other Suit Strength");
         $card_str = self::_('Card');
         $points_str = self::_('Points');
+        $token_str = self::_('Token');
+        $token_desc_str = self::_('Description');
+        $picker_str = self::_('Picker');
+        $partner_str = self::_('Partner');
+        $deaker_str = self::_('Dealer');
         
         $this->tpl['HELP_STR'] = self::_("Toggle Help");
         $this->tpl['HELP'] = self::raw("
@@ -89,6 +94,25 @@ class view_sheepshead_sheepshead extends game_view
                 <tr>
                     <td>J</td>
                     <td>2</td>
+                </tr>
+            </table>
+            <br><br>   
+            <table class='help_table'>
+                <tr>
+                    <th class='help_table'>$token_str</th>
+                    <th class='help_table'>$token_desc_str</th>
+                </tr>
+                <tr style='height:30px;'>
+                    <td class='playertoken' style='background-position:-210px 0px'></td>
+                    <td>$picker_str</td>
+                </tr>
+                <tr style='height:30px;'>
+                    <td class='playertoken' style='background-position:-180px 0px'></td>
+                    <td>$partner_str</td>
+                </tr>
+                <tr style='height:30px;'>
+                    <td class='playertoken' style='background-position:-30px 0px'></td>
+                    <td>$deaker_str</td>
                 </tr>
             </table>"
         );

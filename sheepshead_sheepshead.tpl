@@ -11,7 +11,7 @@
         </div>
     </div>
     <!-- END playerhandblock -->
-    <div class="playertable_info">
+    <div class="playertable playertable_info">
         <div id="partner_card" class="info_block"></div>
         <div id="current_trick" class="info_block"></div>
         <div id="points_details" class="info_block"></div>
@@ -39,9 +39,8 @@ var jstpl_cardontable = '<div class="${class}" id="cardontable_${player_id}" sty
 var jstpl_token = '<div class="playertoken" id="playertoken_${token_id}" style="background-position:-${x}px -${y}px">\
                    </div>';
 
-var jstpl_player_board = '\<div class="cp_board">\
-    <span>Tricks Taken: <span id="trick_counter_${id}">0</span></span>\
-</div>';
+var jstpl_player_board = '\<div class="cp_board"><span>Tricks Taken: <span id="trick_counter_${id}">0</span></span>\
+                          </div>';
 
 </script>  
 

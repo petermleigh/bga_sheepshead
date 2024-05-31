@@ -75,7 +75,7 @@ class Sheepshead extends Table
             $color = array_shift($default_colors);
             $values[] = "('".$player_id."','$color','".$player['player_canal']."','".addslashes($player['player_name'])."','".addslashes($player['player_avatar'])."')";
         }
-        $sql .= implode($values, ',');
+        $sql .= implode(',', $values);
         self::DbQuery($sql);
         self::reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         self::reloadPlayersBasicInfos();
@@ -780,7 +780,7 @@ class Sheepshead extends Table
                 'value' => $currentCard['type_arg'],
                 'suit' => $currentCard['type'], 
                 'card_str_html' => $this->getCardStrHTML($currentCard),
-                'trick_suit_str' => "Current Trick Suit<br>$trick_suit_str",
+                'trick_suit_str' => clienttranslate("Current Trick Suit<br>$trick_suit_str"),
             )
         );
         if ($this->getNofromCard($currentCard) == self::getGameStateValue('partnerCard')){
@@ -1000,7 +1000,7 @@ class Sheepshead extends Table
             'partnerCardChosen', 
             clienttranslate('Partner card is ${partner_card_uni}'), 
             array (
-                "partner_card_str" => "Partner Card<br>$partner_card_uni",
+                "partner_card_str" => clienttranslate("Partner Card<br>$partner_card_uni"),
                 "partner_card_uni" => $partner_card_uni,
             )
         );

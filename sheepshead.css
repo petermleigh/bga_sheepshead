@@ -8,19 +8,12 @@
  * -----
  */
 
+ /* Sprites */
 .playertoken {
     position: absolute;
     width: 30px;
     height: 30px;
     background-image: url('img/tokens.png'); 
-}
-
-.playertokens{
-    display: inline-block;
-    position: relative;
-    left: -30px;
-    width: 30px;
-    height: 90px;
 }
 
 .cardontable {
@@ -41,18 +34,14 @@
     box-shadow: 3px 3px 3px #000000a0;
 }
 
-.playertablecard {
-    display: inline-block;
-    position: relative;
-    left: -15px;
-    width: 72px;
-    height: 112px;
-}
-
+/* containers */
 #playertables {
     position: relative;
-    width: 800px;
-    height: 400px;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    width: 750px;
+    height: fit-content;
     margin: 0 auto;
     background-image: radial-gradient(darkgreen, rgb(0, 61, 0));
     border-radius: 25px;
@@ -69,6 +58,7 @@
     margin: 0;
 }
 
+/* hand styles */
 .unplayable_card {
     -webkit-filter: grayscale(100%);
        -moz-filter: grayscale(100%);
@@ -86,67 +76,89 @@
             filter: grayscale(0%);
 }
 
+/* player area styles */
+.playertable {
+    text-align: center;
+    width: fit-content;
+    height: fit-content;
+    border-width: 2px;
+    border-radius: 25px;
+    margin: 20px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.playertablename {
+    font-weight: bold;
+    top: 0px;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 25px;
+    margin-right: 25px;
+    border-radius: 25px;
+    background-color: rgba(255, 255, 255, 0.1);
+    text-shadow: black 0px 1px 2px;
+    background-blend-mode: lighten;
+}
+
+.playertokens{
+    display: inline-block;
+    position: relative;
+    width: 30px;
+    height: 90px;
+    margin: 5px;
+}
+
+.playertablecard {
+    display: inline-block;
+    position: relative;
+    width: 72px;
+    height: 112px;
+    margin: 5px;
+    padding-right: 40px;  /* this centers card in player box (30px tokens + 5px token margin + 5px card margin) */
+    left: -20px;          /* dojo is offsetting the card by 20px? */
+}
+
+.playertable_NE {
+    grid-area: 1 / 3;
+}
+
+.playertable_SE {
+    grid-area: 2 / 3;
+}
+
+.playertable_NW {
+    grid-area: 1 / 1;
+}
+
+.playertable_SW {
+    grid-area: 2 / 1;
+}
+
+.playertable_S {
+    grid-area: 2 / 2;
+}
+
+.playertable_info {
+    grid-area: 1 / 2;
+    text-align: center;
+    border-style: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    background-blend-mode: lighten;
+}
+
+.info_block{
+    font-weight: bold;
+    margin: 0 auto;
+    padding: 5px;
+}
+
+/* Misc styles */
 .help_table {
     padding-left: 0px;
     padding-right: 10px;
     padding-bottom: 5px;
     padding-top: 0px;
     margin: auto;
-}
-
-.playertablename {
-    font-weight: bold;
-    top: 0px;
-    padding: 5px;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.1);
-    background-blend-mode: lighten;
-}
-
-.playertable {
-    position: absolute;
-    text-align: center;
-    width: 180px;
-    height: 130px;
-    padding: 20px;
-    border-width: 2px;
-    border-radius: 25px;
-    border-style: solid;
-    border-color: rgba(0, 0, 0, 0.2);
-}
-
-.playertable_NE {
-    right: 20px;
-    top: 20px;
-}
-.playertable_SE {
-    right: 20px;
-    bottom: 20px;
-}
-.playertable_NW {
-    left: 20px;
-    top: 20px;
-}
-.playertable_SW {
-    left: 20px;
-    bottom: 20px;
-}
-.playertable_S {
-    left: 50%;
-    margin-left: -90px;
-    bottom: 20px;
-}
-.playertable_info {
-    position: absolute;
-    text-align: center;
-    width: 180px;
-    height: 130px;
-    padding: 20px;
-    left: 50%;
-    margin-left: -90px;
-    top: 20px;
-}
-.info_block{
-    margin: 0 auto;
-    padding: 5px;
 }
